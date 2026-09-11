@@ -1,9 +1,22 @@
 """
 SQLAlchemy ORM models package for Captain's Treasure Ledger.
-Models (Rank, CrewMember, Voyage, Expense, Payout, TransactionLog) will be registered in Phase 2.
-All monetary entities adhere to zero-loss integer minor unit arithmetic (cents/paise) and integer share units.
+Exports all canonical models for treasury, crew, and voyage ledger operations.
 """
 
 from backend.core.database import Base
+from backend.models.rank import Rank
+from backend.models.crew import CrewMember
+from backend.models.voyage import Voyage
+from backend.models.expense import Expense
+from backend.models.transaction import TransactionLog
+from backend.models.payout import Payout
 
-__all__ = ["Base"]
+__all__ = [
+    "Base",
+    "Rank",
+    "CrewMember",
+    "Voyage",
+    "Expense",
+    "TransactionLog",
+    "Payout",
+]

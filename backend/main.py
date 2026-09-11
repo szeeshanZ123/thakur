@@ -19,6 +19,7 @@ from ai.prompts import DEFAULT_SYSTEM_PROMPT
 from ml.model import train_baseline_model, save_model, load_model, DEFAULT_MODEL_PATH
 from ml.prediction import make_prediction
 from backend.core.database import init_db
+import backend.models  # Ensures all ORM models are registered with Base.metadata
 import pandas as pd
 
 load_dotenv()
