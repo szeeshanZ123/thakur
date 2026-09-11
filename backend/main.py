@@ -44,6 +44,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register Core API Routers
+from backend.routers import (
+    ranks_router,
+    crew_router,
+    voyages_router,
+    expenses_router,
+    transactions_router,
+)
+
+app.include_router(ranks_router)
+app.include_router(crew_router)
+app.include_router(voyages_router)
+app.include_router(expenses_router)
+app.include_router(transactions_router)
+
 
 # --- Request & Response Models ---
 
