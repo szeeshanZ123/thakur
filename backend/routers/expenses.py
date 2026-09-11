@@ -14,6 +14,7 @@ from backend.models.voyage import Voyage
 from backend.models.transaction import TransactionLog
 from backend.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
 from backend.schemas.analytics import PaginatedResponse
+from backend.services.financial_service import create_and_post_expense
 
 router = APIRouter(prefix="/api/expenses", tags=["Expenses"])
 
@@ -58,27 +59,20 @@ def create_expense(
     payload: ExpenseCreate,
     db: Session = Depends(get_db)
 ):
-    """Record an operational expense against an expedition in integer paise."""
-    # Verify voyage exists
-    voyage = db.query(Voyage).filter(Voyage.id == payload.voyage_id).first()
-    if not voyage:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Voyage with ID {payload.voyage_id} not found."
-        )
-
-    expense = Expense(
+    """
+    Record an operational expense against an expedition in integer paise.
+    Atomically writes to Expense table and creates an immutable DEBIT transaction.
+    """
+    expense, tx = create_and_post_expense(
+        db=db,
         voyage_id=payload.voyage_id,
         category=payload.category,
         amount_paise=payload.amount_paise,
         date=payload.date,
         description=payload.description
     )
-    db.add(expense)
-    db.commit()
-    db.refresh(expense)
-
     return expense
+
 
 
 @router.get("/{expense_id}", response_model=ExpenseResponse, summary="Get expense by ID")

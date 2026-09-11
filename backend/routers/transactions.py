@@ -12,8 +12,16 @@ from sqlalchemy.orm import Session
 from backend.core.database import get_db
 from backend.models.transaction import TransactionLog
 from backend.models.voyage import Voyage
-from backend.schemas.transaction import TransactionResponse
+from backend.schemas.transaction import (
+    TransactionResponse,
+    TransactionReversalRequest,
+    TransactionCorrectionRequest,
+)
 from backend.schemas.analytics import PaginatedResponse
+from backend.services.financial_service import (
+    post_reversal_transaction,
+    post_correction_transaction,
+)
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
@@ -22,6 +30,8 @@ router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 def list_transactions(
     voyage_id: Optional[int] = Query(None, description="Filter by voyage ID"),
     transaction_type: Optional[str] = Query(None, description="Filter by type (CREDIT, DEBIT, REVERSAL, CORRECTION)"),
+    reference_type: Optional[str] = Query(None, description="Filter by reference type (e.g. voyage_revenue, expense, transaction)"),
+    reference_id: Optional[int] = Query(None, description="Filter by reference entity primary key"),
     date_from: Optional[datetime] = Query(None, description="Filter timestamp on or after"),
     date_to: Optional[datetime] = Query(None, description="Filter timestamp on or before"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
@@ -35,6 +45,10 @@ def list_transactions(
         query = query.filter(TransactionLog.voyage_id == voyage_id)
     if transaction_type:
         query = query.filter(TransactionLog.transaction_type == transaction_type.upper())
+    if reference_type:
+        query = query.filter(TransactionLog.reference_type == reference_type)
+    if reference_id is not None:
+        query = query.filter(TransactionLog.reference_id == reference_id)
     if date_from:
         query = query.filter(TransactionLog.timestamp >= date_from)
     if date_to:
@@ -91,3 +105,43 @@ def get_voyage_transactions(
         .all()
     )
     return transactions
+
+
+@router.post("/{transaction_id}/reverse", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED, summary="Reverse a financial transaction")
+def reverse_transaction(
+    transaction_id: int,
+    payload: TransactionReversalRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Atomically post a REVERSAL transaction entry for an existing transaction.
+    The original transaction remains strictly immutable and intact.
+    """
+    reversal_tx = post_reversal_transaction(
+        db=db,
+        transaction_id=transaction_id,
+        reason=payload.reason
+    )
+    return reversal_tx
+
+
+@router.post("/{transaction_id}/correct", response_model=List[TransactionResponse], status_code=status.HTTP_201_CREATED, summary="Correct a financial transaction")
+def correct_transaction(
+    transaction_id: int,
+    payload: TransactionCorrectionRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Atomically post a correction:
+    1. Reverses original transaction via a REVERSAL entry.
+    2. Posts a replacement transaction with the corrected amount_paise.
+    Full historical audit trail is preserved.
+    """
+    reversal_tx, corrected_tx = post_correction_transaction(
+        db=db,
+        original_transaction_id=transaction_id,
+        new_amount_paise=payload.new_amount_paise,
+        reason=payload.reason
+    )
+    return [reversal_tx, corrected_tx]
+

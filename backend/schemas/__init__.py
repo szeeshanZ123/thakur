@@ -23,6 +23,8 @@ from backend.schemas.voyage import (
     VoyageUpdate,
     VoyageResponse,
     VoyageSummary,
+    VoyageFinancialSummaryResponse,
+    RevenuePostRequest,
 )
 from backend.schemas.expense import (
     ExpenseBase,
@@ -33,6 +35,8 @@ from backend.schemas.expense import (
 from backend.schemas.transaction import (
     TransactionResponse,
     TransactionCreateInternal,
+    TransactionReversalRequest,
+    TransactionCorrectionRequest,
 )
 from backend.schemas.payout import (
     PayoutResponse,
@@ -72,6 +76,8 @@ __all__ = [
     "VoyageUpdate",
     "VoyageResponse",
     "VoyageSummary",
+    "VoyageFinancialSummaryResponse",
+    "RevenuePostRequest",
     # Expense schemas
     "ExpenseBase",
     "ExpenseCreate",
@@ -80,6 +86,8 @@ __all__ = [
     # Transaction schemas
     "TransactionResponse",
     "TransactionCreateInternal",
+    "TransactionReversalRequest",
+    "TransactionCorrectionRequest",
     # Payout schemas
     "PayoutResponse",
     "PayoutPreviewItem",
@@ -97,3 +105,4 @@ __all__ = [
     "PaginationParams",
     "PaginatedResponse",
 ]
+

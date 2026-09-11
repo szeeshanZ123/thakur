@@ -13,24 +13,42 @@ from backend.models.voyage import Voyage
 from backend.models.expense import Expense
 from backend.models.transaction import TransactionLog
 from backend.models.payout import Payout
-from backend.schemas.voyage import VoyageCreate, VoyageUpdate, VoyageResponse
+from backend.schemas.voyage import (
+    VoyageCreate,
+    VoyageUpdate,
+    VoyageResponse,
+    VoyageFinancialSummaryResponse,
+    RevenuePostRequest,
+)
+from backend.schemas.transaction import TransactionResponse
 from backend.schemas.analytics import PaginatedResponse
+from backend.services.financial_service import (
+    get_voyage_financial_summary,
+    post_revenue_transaction,
+    calculate_voyage_effective_revenue,
+    calculate_voyage_effective_expenses,
+)
 
 router = APIRouter(prefix="/api/voyages", tags=["Voyages"])
 
 
-def _to_voyage_response(voyage: Voyage) -> VoyageResponse:
+def _to_voyage_response(voyage: Voyage, db: Optional[Session] = None) -> VoyageResponse:
     """Helper to convert Voyage ORM entity to VoyageResponse with calculated metrics."""
-    total_expenses = sum(e.amount_paise for e in voyage.expenses) if voyage.expenses else 0
-    net_profit = voyage.revenue_paise - total_expenses
-    margin_bps = (net_profit * 10000 // voyage.revenue_paise) if voyage.revenue_paise > 0 else 0
+    if db:
+        revenue = calculate_voyage_effective_revenue(db, voyage.id)
+        total_expenses = calculate_voyage_effective_expenses(db, voyage.id)
+    else:
+        revenue = voyage.revenue_paise
+        total_expenses = sum(e.amount_paise for e in voyage.expenses) if voyage.expenses else 0
+    net_profit = revenue - total_expenses
+    margin_bps = (net_profit * 10000 // revenue) if revenue > 0 else 0
 
     return VoyageResponse(
         id=voyage.id,
         name=voyage.name,
         date=voyage.date,
         description=voyage.description,
-        revenue_paise=voyage.revenue_paise,
+        revenue_paise=revenue,
         status=voyage.status,
         total_expenses_paise=total_expenses,
         net_profit_paise=net_profit,
@@ -66,7 +84,7 @@ def list_voyages(
     total_pages = math.ceil(total / page_size) if total > 0 else 1
     voyage_records = query.order_by(Voyage.date.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
-    items = [_to_voyage_response(v) for v in voyage_records]
+    items = [_to_voyage_response(v, db) for v in voyage_records]
     return PaginatedResponse[VoyageResponse](
         items=items,
         total=total,
@@ -93,7 +111,7 @@ def create_voyage(
     db.commit()
     db.refresh(voyage)
 
-    return _to_voyage_response(voyage)
+    return _to_voyage_response(voyage, db)
 
 
 @router.get("/{voyage_id}", response_model=VoyageResponse, summary="Get voyage by ID")
@@ -108,7 +126,7 @@ def get_voyage(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Voyage with ID {voyage_id} not found."
         )
-    return _to_voyage_response(voyage)
+    return _to_voyage_response(voyage, db)
 
 
 @router.put("/{voyage_id}", response_model=VoyageResponse, summary="Update voyage metadata")
@@ -138,7 +156,7 @@ def update_voyage(
 
     db.commit()
     db.refresh(voyage)
-    return _to_voyage_response(voyage)
+    return _to_voyage_response(voyage, db)
 
 
 @router.delete("/{voyage_id}", status_code=status.HTTP_200_OK, summary="Delete an unfinalized empty voyage")
@@ -171,3 +189,62 @@ def delete_voyage(
     db.delete(voyage)
     db.commit()
     return {"message": f"Voyage {voyage_id} successfully deleted.", "id": voyage_id}
+
+
+@router.post("/{voyage_id}/revenue/post", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED, summary="Post voyage revenue to immutable ledger")
+def post_revenue(
+    voyage_id: int,
+    payload: Optional[RevenuePostRequest] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Atomically post gross loot revenue for a voyage as an immutable CREDIT transaction.
+    Enforces idempotency: rejects duplicate postings with HTTP 409 Conflict.
+    """
+    revenue_override = payload.revenue_paise if payload else None
+    desc_override = payload.description if payload else None
+    tx = post_revenue_transaction(
+        db=db,
+        voyage_id=voyage_id,
+        revenue_paise=revenue_override,
+        description=desc_override
+    )
+    return tx
+
+
+@router.get("/{voyage_id}/financial-summary", response_model=VoyageFinancialSummaryResponse, summary="Get voyage financial summary")
+def get_financial_summary(
+    voyage_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve comprehensive financial summary in exact integer paise:
+    Gross revenue, operational expenses, net profit (can be negative), and distributable profit.
+    """
+    summary = get_voyage_financial_summary(db=db, voyage_id=voyage_id)
+    return VoyageFinancialSummaryResponse(**summary)
+
+
+@router.get("/{voyage_id}/transactions", response_model=List[TransactionResponse], summary="Get chronological transactions for a voyage")
+def get_voyage_transactions(
+    voyage_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve chronological audit ledger transactions for a specific voyage.
+    """
+    voyage = db.query(Voyage).filter(Voyage.id == voyage_id).first()
+    if not voyage:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Voyage with ID {voyage_id} not found."
+        )
+
+    transactions = (
+        db.query(TransactionLog)
+        .filter(TransactionLog.voyage_id == voyage_id)
+        .order_by(TransactionLog.timestamp.asc())
+        .all()
+    )
+    return transactions
+

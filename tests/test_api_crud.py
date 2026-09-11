@@ -257,14 +257,34 @@ def test_expenses_crud_and_validation():
         assert resp_list.status_code == 200
         assert resp_list.json()["total"] == 1
 
-        # 4. Update unposted expense
-        resp_put = client.put(f"/api/expenses/{exp_id}", json={"amount_paise": 350000})
-        assert resp_put.status_code == 200
-        assert resp_put.json()["amount_paise"] == 350000
+        # 4. Attempting to update or delete a POSTED expense is BLOCKED (409 Conflict)
+        resp_put_blocked = client.put(f"/api/expenses/{exp_id}", json={"amount_paise": 350000})
+        assert resp_put_blocked.status_code == 409
+        assert "Posted" in resp_put_blocked.json()["detail"]
 
-        # 5. Delete unposted expense
-        resp_del = client.delete(f"/api/expenses/{exp_id}")
+        resp_del_blocked = client.delete(f"/api/expenses/{exp_id}")
+        assert resp_del_blocked.status_code == 409
+        assert "Posted" in resp_del_blocked.json()["detail"]
+
+        # 5. Unposted expense can still be updated and deleted
+        unposted_exp = Expense(
+            voyage_id=v_id,
+            category="Rations",
+            amount_paise=50000,
+            date=datetime.utcnow(),
+            description="Draft ration order"
+        )
+        session.add(unposted_exp)
+        session.commit()
+        session.refresh(unposted_exp)
+
+        resp_put = client.put(f"/api/expenses/{unposted_exp.id}", json={"amount_paise": 60000})
+        assert resp_put.status_code == 200
+        assert resp_put.json()["amount_paise"] == 60000
+
+        resp_del = client.delete(f"/api/expenses/{unposted_exp.id}")
         assert resp_del.status_code == 200
+
 
     finally:
         session.close()
