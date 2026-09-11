@@ -1,3 +1,4 @@
+
 """
 API Router for Voyage Operational Expenses.
 """
@@ -17,6 +18,7 @@ from backend.schemas.analytics import PaginatedResponse
 from backend.services.financial_service import create_and_post_expense
 
 router = APIRouter(prefix="/api/expenses", tags=["Expenses"])
+
 
 
 @router.get("", response_model=PaginatedResponse[ExpenseResponse], summary="List operational expenses with filters")

@@ -16,7 +16,9 @@ from backend.schemas.crew import (
     CrewResponse,
     CrewSummary,
     CrewLedgerEntry,
+    CrewBalanceResponse,
 )
+
 from backend.schemas.voyage import (
     VoyageBase,
     VoyageCreate,
@@ -70,7 +72,9 @@ __all__ = [
     "CrewResponse",
     "CrewSummary",
     "CrewLedgerEntry",
+    "CrewBalanceResponse",
     # Voyage schemas
+
     "VoyageBase",
     "VoyageCreate",
     "VoyageUpdate",

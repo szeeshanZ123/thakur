@@ -21,6 +21,11 @@ from backend.schemas.voyage import (
     RevenuePostRequest,
 )
 from backend.schemas.transaction import TransactionResponse
+from backend.schemas.payout import (
+    PayoutPreview,
+    PayoutFinalizeResponse,
+    PayoutResponse,
+)
 from backend.schemas.analytics import PaginatedResponse
 from backend.services.financial_service import (
     get_voyage_financial_summary,
@@ -28,8 +33,15 @@ from backend.services.financial_service import (
     calculate_voyage_effective_revenue,
     calculate_voyage_effective_expenses,
 )
+from backend.services.payout_service import (
+    preview_voyage_payouts,
+    finalize_voyage_payouts,
+    get_voyage_payouts,
+)
+from fastapi import Header
 
 router = APIRouter(prefix="/api/voyages", tags=["Voyages"])
+
 
 
 def _to_voyage_response(voyage: Voyage, db: Optional[Session] = None) -> VoyageResponse:
@@ -247,4 +259,90 @@ def get_voyage_transactions(
         .all()
     )
     return transactions
+
+
+@router.post("/{voyage_id}/payouts/preview", response_model=PayoutPreview, summary="Preview voyage dividend payouts")
+@router.get("/{voyage_id}/payouts/preview", response_model=PayoutPreview, summary="Preview voyage dividend payouts (GET alias)")
+@router.post("/{voyage_id}/calculate-payouts", response_model=PayoutPreview, summary="Calculate dividend payouts preview (alias)")
+def preview_payouts(
+    voyage_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate an uncommitted, transparent dividend preview for a voyage.
+    Reconciles exact zero-loss integer math across all active crew members.
+    """
+    preview_data = preview_voyage_payouts(db=db, voyage_id=voyage_id)
+    return PayoutPreview(**preview_data)
+
+
+@router.post("/{voyage_id}/payouts/finalize", response_model=PayoutFinalizeResponse, status_code=status.HTTP_201_CREATED, summary="Finalize immutable voyage dividend payouts")
+@router.post("/{voyage_id}/finalize-payouts", response_model=PayoutFinalizeResponse, status_code=status.HTTP_201_CREATED, summary="Finalize dividend payouts (alias)")
+def finalize_payouts(
+    voyage_id: int,
+    x_user_role: Optional[str] = Header(None, alias="X-User-Role", description="User authorization role (captain, admin, crew)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Atomically finalize and commit immutable dividend payouts for a completed voyage.
+    Enforces Captain/Admin authorization, completed voyage status, and idempotency protection.
+    """
+    voyage, payouts = finalize_voyage_payouts(
+        db=db,
+        voyage_id=voyage_id,
+        user_role=x_user_role
+    )
+
+    total_distributed = sum(p.payout_paise for p in payouts)
+    payout_responses = [
+        PayoutResponse(
+            id=p.id,
+            voyage_id=p.voyage_id,
+            crew_member_id=p.crew_member_id,
+            crew_member_name=p.crew_member.name if p.crew_member else None,
+            rank_name=p.crew_member.rank.name if p.crew_member and p.crew_member.rank else None,
+            share_weight_units_used=p.share_weight_units_used,
+            share_value_paise=p.share_value_paise,
+            payout_paise=p.payout_paise,
+            status=p.status,
+            calculated_at=p.calculated_at,
+            finalized_at=p.finalized_at,
+            created_at=p.created_at
+        )
+        for p in payouts
+    ]
+
+    return PayoutFinalizeResponse(
+        voyage_id=voyage_id,
+        status="finalized",
+        total_distributed_paise=total_distributed,
+        payouts=payout_responses
+    )
+
+
+@router.get("/{voyage_id}/payouts", response_model=List[PayoutResponse], summary="Get finalized dividend payouts for a voyage")
+def list_voyage_payouts(
+    voyage_id: int,
+    db: Session = Depends(get_db)
+):
+    """Retrieve all historical payout records for a specific voyage."""
+    payouts = get_voyage_payouts(db=db, voyage_id=voyage_id)
+    return [
+        PayoutResponse(
+            id=p.id,
+            voyage_id=p.voyage_id,
+            crew_member_id=p.crew_member_id,
+            crew_member_name=p.crew_member.name if p.crew_member else None,
+            rank_name=p.crew_member.rank.name if p.crew_member and p.crew_member.rank else None,
+            share_weight_units_used=p.share_weight_units_used,
+            share_value_paise=p.share_value_paise,
+            payout_paise=p.payout_paise,
+            status=p.status,
+            calculated_at=p.calculated_at,
+            finalized_at=p.finalized_at,
+            created_at=p.created_at
+        )
+        for p in payouts
+    ]
+
 

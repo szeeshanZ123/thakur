@@ -11,10 +11,19 @@ from backend.core.database import get_db
 from backend.models.crew import CrewMember
 from backend.models.rank import Rank
 from backend.models.payout import Payout
-from backend.schemas.crew import CrewCreate, CrewUpdate, CrewResponse, CrewLedgerEntry
+from backend.schemas.crew import (
+    CrewCreate,
+    CrewUpdate,
+    CrewResponse,
+    CrewLedgerEntry,
+    CrewBalanceResponse,
+)
+from backend.schemas.payout import PayoutResponse
 from backend.schemas.analytics import PaginatedResponse
+from backend.services.payout_service import get_crew_payout_history, get_crew_cumulative_balance
 
 router = APIRouter(prefix="/api/crew", tags=["Crew"])
+
 
 
 def _to_crew_response(crew: CrewMember) -> CrewResponse:
@@ -207,3 +216,43 @@ def get_crew_ledger(
         )
 
     return ledger_entries
+
+
+@router.get("/{crew_id}/payouts", response_model=List[PayoutResponse], summary="Get historical dividend payouts for a crew member")
+def list_crew_payouts(
+    crew_id: int,
+    db: Session = Depends(get_db)
+):
+    """Retrieve historical dividend payouts for a crew member using stored snapshot values."""
+    payouts = get_crew_payout_history(db=db, crew_member_id=crew_id)
+    return [
+        PayoutResponse(
+            id=p.id,
+            voyage_id=p.voyage_id,
+            crew_member_id=p.crew_member_id,
+            crew_member_name=p.crew_member.name if p.crew_member else None,
+            rank_name=p.crew_member.rank.name if p.crew_member and p.crew_member.rank else None,
+            share_weight_units_used=p.share_weight_units_used,
+            share_value_paise=p.share_value_paise,
+            payout_paise=p.payout_paise,
+            status=p.status,
+            calculated_at=p.calculated_at,
+            finalized_at=p.finalized_at,
+            created_at=p.created_at
+        )
+        for p in payouts
+    ]
+
+
+@router.get("/{crew_id}/balance", response_model=CrewBalanceResponse, summary="Get crew member cumulative balance")
+def get_crew_balance(
+    crew_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve current cumulative running dividend balance in integer paise
+    calculated from historical finalized payout records.
+    """
+    balance_info = get_crew_cumulative_balance(db=db, crew_member_id=crew_id)
+    return CrewBalanceResponse(**balance_info)
+
