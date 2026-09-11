@@ -54,6 +54,9 @@ data/*
 !data/.gitkeep
 models/*
 !models/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
 
 # Operating System Files
 .DS_Store

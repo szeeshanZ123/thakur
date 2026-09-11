@@ -18,15 +18,21 @@ from ai.llm import llm_client
 from ai.prompts import DEFAULT_SYSTEM_PROMPT
 from ml.model import train_baseline_model, save_model, load_model, DEFAULT_MODEL_PATH
 from ml.prediction import make_prediction
+from backend.core.database import init_db
 import pandas as pd
 
 load_dotenv()
 
 app = FastAPI(
-    title="AI Hackathon Starter API",
-    description="Clean, modular FastAPI backend for AI & ML Hackathons",
+    title="Captain's Treasure Ledger API",
+    description="Automated financial management system and treasury audit platform tailored to pirate economics.",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def startup_event():
+    """Initialize database tables on application startup."""
+    init_db()
 
 # Enable CORS for frontend integrations
 app.add_middleware(
