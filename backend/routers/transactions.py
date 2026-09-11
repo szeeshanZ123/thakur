@@ -6,7 +6,7 @@ Strictly read-only: No PUT or DELETE endpoints exist for transaction logs.
 from typing import List, Optional
 from datetime import datetime
 import math
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
 from sqlalchemy.orm import Session
 
 from backend.core.database import get_db
@@ -24,6 +24,7 @@ from backend.services.financial_service import (
 )
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
+
 
 
 @router.get("", response_model=PaginatedResponse[TransactionResponse], summary="List immutable transaction history")
@@ -111,12 +112,20 @@ def get_voyage_transactions(
 def reverse_transaction(
     transaction_id: int,
     payload: TransactionReversalRequest,
+    x_user_role: Optional[str] = Header(None, alias="X-User-Role", description="User authorization role (captain, admin, crew)"),
     db: Session = Depends(get_db)
 ):
     """
     Atomically post a REVERSAL transaction entry for an existing transaction.
     The original transaction remains strictly immutable and intact.
+    Enforces Captain/Admin authorization.
     """
+    if x_user_role and x_user_role.lower() == "crew":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Crew members are not authorized to reverse transactions. Captain or Admin authorization required."
+        )
+
     reversal_tx = post_reversal_transaction(
         db=db,
         transaction_id=transaction_id,
@@ -129,6 +138,7 @@ def reverse_transaction(
 def correct_transaction(
     transaction_id: int,
     payload: TransactionCorrectionRequest,
+    x_user_role: Optional[str] = Header(None, alias="X-User-Role", description="User authorization role (captain, admin, crew)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -136,7 +146,14 @@ def correct_transaction(
     1. Reverses original transaction via a REVERSAL entry.
     2. Posts a replacement transaction with the corrected amount_paise.
     Full historical audit trail is preserved.
+    Enforces Captain/Admin authorization.
     """
+    if x_user_role and x_user_role.lower() == "crew":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Crew members are not authorized to correct transactions. Captain or Admin authorization required."
+        )
+
     reversal_tx, corrected_tx = post_correction_transaction(
         db=db,
         original_transaction_id=transaction_id,
@@ -144,4 +161,5 @@ def correct_transaction(
         reason=payload.reason
     )
     return [reversal_tx, corrected_tx]
+
 

@@ -207,12 +207,19 @@ def delete_voyage(
 def post_revenue(
     voyage_id: int,
     payload: Optional[RevenuePostRequest] = None,
+    x_user_role: Optional[str] = Header(None, alias="X-User-Role", description="User authorization role (captain, admin, crew)"),
     db: Session = Depends(get_db)
 ):
     """
     Atomically post gross loot revenue for a voyage as an immutable CREDIT transaction.
-    Enforces idempotency: rejects duplicate postings with HTTP 409 Conflict.
+    Enforces Captain/Admin role authorization and idempotency: rejects duplicate postings with HTTP 409 Conflict.
     """
+    if x_user_role and x_user_role.lower() == "crew":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Crew members are not authorized to post revenue. Captain or Admin authorization required."
+        )
+
     revenue_override = payload.revenue_paise if payload else None
     desc_override = payload.description if payload else None
     tx = post_revenue_transaction(
@@ -222,6 +229,7 @@ def post_revenue(
         description=desc_override
     )
     return tx
+
 
 
 @router.get("/{voyage_id}/financial-summary", response_model=VoyageFinancialSummaryResponse, summary="Get voyage financial summary")

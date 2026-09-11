@@ -6,7 +6,7 @@ API Router for Voyage Operational Expenses.
 from typing import List, Optional
 from datetime import datetime
 import math
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
 from sqlalchemy.orm import Session, joinedload
 
 from backend.core.database import get_db
@@ -18,7 +18,6 @@ from backend.schemas.analytics import PaginatedResponse
 from backend.services.financial_service import create_and_post_expense
 
 router = APIRouter(prefix="/api/expenses", tags=["Expenses"])
-
 
 
 @router.get("", response_model=PaginatedResponse[ExpenseResponse], summary="List operational expenses with filters")
@@ -59,12 +58,20 @@ def list_expenses(
 @router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED, summary="Record a new operational expense")
 def create_expense(
     payload: ExpenseCreate,
+    x_user_role: Optional[str] = Header(None, alias="X-User-Role", description="User authorization role (captain, admin, crew)"),
     db: Session = Depends(get_db)
 ):
     """
     Record an operational expense against an expedition in integer paise.
     Atomically writes to Expense table and creates an immutable DEBIT transaction.
+    Enforces Captain/Admin authorization.
     """
+    if x_user_role and x_user_role.lower() == "crew":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Crew members are not authorized to record operational expenses. Captain or Admin authorization required."
+        )
+
     expense, tx = create_and_post_expense(
         db=db,
         voyage_id=payload.voyage_id,
@@ -74,6 +81,7 @@ def create_expense(
         description=payload.description
     )
     return expense
+
 
 
 

@@ -464,10 +464,127 @@ def run_phase_5_tests():
     finally:
         cleanup_context(session, engine, tmp_dir)
 
+    # ----------------------------------------------------
+    # TEST 15: Negative Profit / Zero Distributable Profit
+    # ----------------------------------------------------
+    print("[15/18] Testing Negative Profit & Zero Distributable Profit Invariant...")
+    client, session, engine, tmp_dir = get_test_context()
+
+    try:
+        voyage = Voyage(name="Loss Voyage", date=datetime.now(UTC), revenue_paise=1000000, status="completed")
+        session.add(voyage)
+        session.commit()
+        post_revenue_transaction(session, voyage.id)
+        create_and_post_expense(session, voyage.id, "Repair", 1500000, datetime.now(UTC))
+
+        summary = get_voyage_financial_summary(session, voyage.id)
+        assert summary["net_profit_paise"] == -500000
+        assert summary["distributable_profit_paise"] == 0
+        print("  -> Passed")
+    finally:
+        cleanup_context(session, engine, tmp_dir)
+
+    # ----------------------------------------------------
+    # TEST 16: Zero / Negative Amount Validation
+    # ----------------------------------------------------
+    print("[16/18] Testing Zero/Negative Amount Rejection...")
+    client, session, engine, tmp_dir = get_test_context()
+    try:
+        v_id = client.post("/api/voyages", json={
+            "name": "Validation Voyage",
+            "date": "2026-09-10T12:00:00",
+            "revenue_paise": 1000000,
+            "status": "ongoing"
+        }).json()["id"]
+
+        # Reject negative expense
+        resp_neg_exp = client.post("/api/expenses", json={"voyage_id": v_id, "category": "Food", "amount_paise": -500})
+        assert resp_neg_exp.status_code == 422
+
+        # Reject zero expense
+        resp_zero_exp = client.post("/api/expenses", json={"voyage_id": v_id, "category": "Food", "amount_paise": 0})
+        assert resp_zero_exp.status_code == 422
+
+        # Reject negative revenue
+        resp_neg_rev = client.post(f"/api/voyages/{v_id}/revenue/post", json={"revenue_paise": -500})
+        assert resp_neg_rev.status_code == 422
+        print("  -> Passed")
+    finally:
+        cleanup_context(session, engine, tmp_dir)
+
+    # ----------------------------------------------------
+    # TEST 17: Role-based Authorization on Financial Mutations
+    # ----------------------------------------------------
+    print("[17/18] Testing Role Authorization (CREW blocked with 403, CAPTAIN/ADMIN authorized)...")
+    client, session, engine, tmp_dir = get_test_context()
+    try:
+        v_id = client.post("/api/voyages", json={
+            "name": "Auth Voyage",
+            "date": "2026-09-10T12:00:00",
+            "revenue_paise": 5000000,
+            "status": "completed"
+        }).json()["id"]
+
+        # CREW cannot post revenue
+        resp_crew_rev = client.post(f"/api/voyages/{v_id}/revenue/post", headers={"X-User-Role": "crew"})
+        assert resp_crew_rev.status_code == 403
+
+        # CAPTAIN can post revenue
+        resp_cap_rev = client.post(f"/api/voyages/{v_id}/revenue/post", headers={"X-User-Role": "captain"})
+        assert resp_cap_rev.status_code == 201
+        tx_id = resp_cap_rev.json()["id"]
+
+        # CREW cannot record expenses
+        resp_crew_exp = client.post("/api/expenses", json={"voyage_id": v_id, "category": "Rum", "amount_paise": 50000}, headers={"X-User-Role": "crew"})
+        assert resp_crew_exp.status_code == 403
+
+        # CAPTAIN can record expenses
+        resp_cap_exp = client.post("/api/expenses", json={"voyage_id": v_id, "category": "Rum", "amount_paise": 50000}, headers={"X-User-Role": "captain"})
+        assert resp_cap_exp.status_code == 201
+
+        # CREW cannot reverse transactions
+        resp_crew_rev_tx = client.post(f"/api/transactions/{tx_id}/reverse", json={"reason": "Audit"}, headers={"X-User-Role": "crew"})
+        assert resp_crew_rev_tx.status_code == 403
+
+        # ADMIN can reverse transactions
+        resp_admin_rev_tx = client.post(f"/api/transactions/{tx_id}/reverse", json={"reason": "Audit"}, headers={"X-User-Role": "admin"})
+        assert resp_admin_rev_tx.status_code == 201
+        print("  -> Passed")
+    finally:
+        cleanup_context(session, engine, tmp_dir)
+
+    # ----------------------------------------------------
+    # TEST 18: Historical Snapshot Immutability
+    # ----------------------------------------------------
+    print("[18/18] Testing Historical Transaction Record Immutability on Entity Updates...")
+    client, session, engine, tmp_dir = get_test_context()
+    try:
+        v_id = client.post("/api/voyages", json={
+            "name": "Original Name",
+            "date": "2026-09-10T12:00:00",
+            "revenue_paise": 3000000,
+            "status": "completed"
+        }).json()["id"]
+
+        rev_tx = client.post(f"/api/voyages/{v_id}/revenue/post").json()
+        tx_id = rev_tx["id"]
+
+        # Update voyage metadata
+        client.put(f"/api/voyages/{v_id}", json={"name": "Altered Name", "status": "ongoing"})
+
+        # Verify transaction log entry remains unchanged
+        stored_tx = client.get(f"/api/transactions/{tx_id}").json()
+        assert stored_tx["amount_paise"] == 3000000
+        assert stored_tx["transaction_type"] == "CREDIT"
+        print("  -> Passed")
+    finally:
+        cleanup_context(session, engine, tmp_dir)
+
     print("=" * 60)
-    print("All 14 Phase 5 Financial Engine test suites passed successfully! [OK]")
+    print("All Phase 5 Financial Engine test suites passed successfully! [OK]")
     print("=" * 60)
 
 
 if __name__ == "__main__":
     run_phase_5_tests()
+
