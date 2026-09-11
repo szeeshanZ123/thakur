@@ -52,6 +52,7 @@ from backend.routers import (
     expenses_router,
     transactions_router,
     payouts_router,
+    analytics_router,
 )
 
 app.include_router(ranks_router)
@@ -60,6 +61,7 @@ app.include_router(voyages_router)
 app.include_router(expenses_router)
 app.include_router(transactions_router)
 app.include_router(payouts_router)
+app.include_router(analytics_router)
 
 
 

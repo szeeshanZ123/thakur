@@ -50,8 +50,8 @@ def calculate_voyage_effective_revenue(db: Session, voyage_id: int) -> int:
 def calculate_voyage_effective_expenses(db: Session, voyage_id: int) -> int:
     """
     Calculate net effective operational expenses for a voyage in integer paise:
-    Total Debits - Reversals of Debits.
-    Falls back to sum(Expense.amount_paise) if no DEBIT transaction entries exist.
+    Total Operational Debits (excluding dividend distributions) - Reversals of Debits.
+    Falls back to sum(Expense.amount_paise) if no operational DEBIT transaction entries exist.
     """
     voyage = db.query(Voyage).filter(Voyage.id == voyage_id).first()
     if not voyage:
@@ -61,19 +61,19 @@ def calculate_voyage_effective_expenses(db: Session, voyage_id: int) -> int:
         )
 
     all_txs = db.query(TransactionLog).filter(TransactionLog.voyage_id == voyage_id).all()
-    debit_txs = [t for t in all_txs if t.transaction_type == "DEBIT"]
+    debit_txs = [t for t in all_txs if t.transaction_type == "DEBIT" and t.reference_type != "voyage_payout"]
     if not debit_txs:
         return sum(e.amount_paise for e in voyage.expenses) if voyage.expenses else 0
 
     debits = sum(t.amount_paise for t in debit_txs)
 
-    # Subtract reversals that target a DEBIT transaction
+    # Subtract reversals that target an operational DEBIT transaction
     reversals_on_debits = 0
     tx_by_id = {t.id: t for t in all_txs}
     for t in all_txs:
         if t.transaction_type == "REVERSAL" and t.reference_id and t.reference_id in tx_by_id:
             referenced_tx = tx_by_id[t.reference_id]
-            if referenced_tx.transaction_type == "DEBIT":
+            if referenced_tx.transaction_type == "DEBIT" and referenced_tx.reference_type != "voyage_payout":
                 reversals_on_debits += t.amount_paise
 
     return debits - reversals_on_debits

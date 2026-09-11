@@ -24,6 +24,21 @@ from backend.services.payout_service import (
     get_crew_cumulative_balance,
 )
 
+from backend.services.analytics_service import (
+    get_dashboard_summary,
+    get_revenue_analytics,
+    get_expense_analytics,
+    get_expense_category_breakdown,
+    get_profit_analytics,
+    get_voyages_profitability,
+    get_top_voyages,
+    get_loss_making_voyages,
+    get_crew_earnings_analytics,
+    get_rank_payout_analytics,
+    get_time_series_analytics,
+    get_payout_analytics,
+)
+
 __all__ = [
     "calculate_voyage_effective_revenue",
     "calculate_voyage_effective_expenses",
@@ -41,5 +56,16 @@ __all__ = [
     "get_voyage_payouts",
     "get_crew_payout_history",
     "get_crew_cumulative_balance",
+    "get_dashboard_summary",
+    "get_revenue_analytics",
+    "get_expense_analytics",
+    "get_expense_category_breakdown",
+    "get_profit_analytics",
+    "get_voyages_profitability",
+    "get_top_voyages",
+    "get_loss_making_voyages",
+    "get_crew_earnings_analytics",
+    "get_rank_payout_analytics",
+    "get_time_series_analytics",
+    "get_payout_analytics",
 ]
-

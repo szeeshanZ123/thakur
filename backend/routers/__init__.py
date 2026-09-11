@@ -8,6 +8,7 @@ from backend.routers.voyages import router as voyages_router
 from backend.routers.expenses import router as expenses_router
 from backend.routers.transactions import router as transactions_router
 from backend.routers.payouts import router as payouts_router
+from backend.routers.analytics import router as analytics_router
 
 __all__ = [
     "ranks_router",
@@ -16,5 +17,5 @@ __all__ = [
     "expenses_router",
     "transactions_router",
     "payouts_router",
+    "analytics_router",
 ]
-
