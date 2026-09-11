@@ -585,6 +585,10 @@ def run_phase_5_tests():
     print("=" * 60)
 
 
+def test_phase_5_financial_engine_suite():
+    run_phase_5_tests()
+
+
 if __name__ == "__main__":
     run_phase_5_tests()
 

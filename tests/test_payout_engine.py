@@ -645,5 +645,9 @@ def run_phase_6_tests():
     print("=" * 60)
 
 
+def test_phase_6_payout_engine_suite():
+    run_phase_6_tests()
+
+
 if __name__ == "__main__":
     run_phase_6_tests()
