@@ -1,6 +1,6 @@
 """
 Pydantic schemas package for Captain's Treasure Ledger API.
-Exports all request validation, response serialization, and analytics data contracts.
+Exports all request validation, response serialization, analytics, and manifest export data contracts.
 """
 
 from backend.schemas.rank import (
@@ -75,6 +75,16 @@ from backend.schemas.analytics import (
     PaginationParams,
     PaginatedResponse,
 )
+from backend.schemas.export import (
+    VoyageManifestMetadata,
+    VoyageManifestInfo,
+    VoyageManifestFinancialSummary,
+    VoyageManifestCrewItem,
+    VoyageManifestExpenseItem,
+    VoyageManifestPayoutItem,
+    VoyageManifestTransactionItem,
+    VoyageManifestResponse,
+)
 
 __all__ = [
     # Rank schemas
@@ -142,4 +152,13 @@ __all__ = [
     "RevenueExpenseResponse",
     "PaginationParams",
     "PaginatedResponse",
+    # Export schemas
+    "VoyageManifestMetadata",
+    "VoyageManifestInfo",
+    "VoyageManifestFinancialSummary",
+    "VoyageManifestCrewItem",
+    "VoyageManifestExpenseItem",
+    "VoyageManifestPayoutItem",
+    "VoyageManifestTransactionItem",
+    "VoyageManifestResponse",
 ]

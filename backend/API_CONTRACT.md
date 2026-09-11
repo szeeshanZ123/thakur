@@ -49,10 +49,7 @@ The Analytics API is the authoritative source of truth for the Captain's Treasur
 
 ### A. Dashboard Summary (`GET /api/analytics/dashboard-summary`)
 * **Headers**: `X-User-Role: captain`
-* **Query Parameters**:
-  * `start_date` (optional, ISO datetime)
-  * `end_date` (optional, ISO datetime)
-  * `voyage_id` (optional, integer)
+* **Query Parameters**: `start_date`, `end_date`, `voyage_id`
 * **Response Body (`DashboardSummaryResponse`)**:
 ```json
 {
@@ -158,7 +155,7 @@ The Analytics API is the authoritative source of truth for the Captain's Treasur
 ---
 
 ### F. Voyage Profitability & ROI (`GET /api/analytics/voyages/profitability`)
-* **Query Parameters**: `start_date`, `end_date`, `sort_by` (`date`, `revenue_paise`, `expenses_paise`, `net_profit_paise`, `name`), `order` (`asc`, `desc`), `page`, `page_size`
+* **Query Parameters**: `start_date`, `end_date`, `sort_by`, `order`, `page`, `page_size`
 * **Response Body (`PaginatedResponse[VoyageProfitabilityItem]`)**:
 ```json
 {
@@ -190,7 +187,7 @@ The Analytics API is the authoritative source of truth for the Captain's Treasur
 ---
 
 ### H. Crew Earnings Leaderboard (`GET /api/analytics/crew/earnings`)
-* **Query Parameters**: `page`, `page_size`, `sort_by` (`earnings`, `name`, `payout_count`), `order` (`asc`, `desc`)
+* **Query Parameters**: `page`, `page_size`, `sort_by`, `order`
 * **Response Body (`PaginatedResponse[CrewEarningsItem]`)**:
 ```json
 {
@@ -275,3 +272,91 @@ The Analytics API is the authoritative source of truth for the Captain's Treasur
   ]
 }
 ```
+
+---
+
+## 4. Voyage Manifest Exports (`/api/voyages/{voyage_id}/export`)
+
+The Export API provides downloadable, verifiable financial manifests in JSON and CSV formats for external auditing and spreadsheet analysis.
+
+### A. JSON Manifest (`GET /api/voyages/{voyage_id}/export/json`)
+* **Headers**: `X-User-Role: captain`
+* **Response Content-Type**: `application/json`
+* **Response Header**: `Content-Disposition: attachment; filename="voyage_{voyage_id}_manifest.json"`
+* **Response Payload Example**:
+```json
+{
+  "manifest_version": "1.0",
+  "exported_at": "2026-09-11T12:00:00Z",
+  "export_format": "json",
+  "voyage": {
+    "id": 1,
+    "name": "Black Pearl Run",
+    "date": "2026-09-01T10:00:00Z",
+    "description": "Expedition to Isla de Muerta",
+    "status": "completed",
+    "created_at": "2026-09-01T08:00:00Z"
+  },
+  "financial_summary": {
+    "revenue_paise": 10000000,
+    "expenses_paise": 3000000,
+    "net_profit_paise": 7000000,
+    "distributable_profit_paise": 7000000
+  },
+  "payout_status": "FINALIZED",
+  "crew": [
+    {
+      "crew_member_id": 1,
+      "name": "Jack Sparrow",
+      "rank": "Captain",
+      "current_share_weight_units": 200,
+      "is_active": true
+    }
+  ],
+  "expenses": [
+    {
+      "expense_id": 10,
+      "category": "Ship Repair",
+      "amount_paise": 3000000,
+      "date": "2026-09-02T14:00:00Z",
+      "description": "Hull reinforcement",
+      "created_at": "2026-09-02T14:05:00Z"
+    }
+  ],
+  "payouts": [
+    {
+      "payout_id": 101,
+      "crew_member_id": 1,
+      "crew_member_name": "Jack Sparrow",
+      "rank": "Captain",
+      "share_weight_units_used": 200,
+      "payout_paise": 7000000,
+      "status": "finalized",
+      "calculated_at": "2026-09-05T18:00:00Z",
+      "finalized_at": "2026-09-05T18:00:00Z"
+    }
+  ],
+  "transactions": [
+    {
+      "transaction_id": 501,
+      "transaction_type": "CREDIT",
+      "amount_paise": 10000000,
+      "description": "Voyage loot credited",
+      "reference_type": "voyage_revenue",
+      "reference_id": 1,
+      "timestamp": "2026-09-01T10:00:00Z",
+      "created_at": "2026-09-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### B. CSV Manifest (`GET /api/voyages/{voyage_id}/export/csv`)
+* **Headers**: `X-User-Role: captain`
+* **Response Content-Type**: `text/csv`
+* **Response Header**: `Content-Disposition: attachment; filename="voyage_{voyage_id}_manifest.csv"`
+* **CSV Columns**:
+  `record_type,id,voyage_id,name,category_or_rank,amount_paise,share_weight_units,date_or_timestamp,description_or_status,reference_type,reference_id`
+* **Spreadsheet Protection**: Cells starting with `=`, `+`, `-`, or `@` are safely escaped with a leading single quote `'`.

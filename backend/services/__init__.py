@@ -39,6 +39,13 @@ from backend.services.analytics_service import (
     get_payout_analytics,
 )
 
+from backend.services.export_service import (
+    build_voyage_manifest,
+    export_voyage_json,
+    export_voyage_csv,
+    get_safe_export_filename,
+)
+
 __all__ = [
     "calculate_voyage_effective_revenue",
     "calculate_voyage_effective_expenses",
@@ -68,4 +75,8 @@ __all__ = [
     "get_rank_payout_analytics",
     "get_time_series_analytics",
     "get_payout_analytics",
+    "build_voyage_manifest",
+    "export_voyage_json",
+    "export_voyage_csv",
+    "get_safe_export_filename",
 ]
