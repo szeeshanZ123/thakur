@@ -1,12 +1,13 @@
 /* ============================================================
-   commons.js — shared UI system for Captain's Treasury
+   common.js — Shared UI & Financial Presentation System
    ============================================================ */
 
 /* ---------- Icon library (inline SVG, stroke-based) ---------- */
 const IC = {
   dashboard: '<path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/>',
   crew: '<circle cx="9" cy="8" r="3.4"/><path d="M2.7 20c.9-3.4 3.4-5.3 6.3-5.3s5.4 1.9 6.3 5.3"/><circle cx="17.2" cy="9.2" r="2.5"/><path d="M16.5 14.8c2.2.3 4 1.6 4.8 3.9"/>',
-  voyage: '<path d="M9 3h6"/><path d="M12 3v18"/><circle cx="12" cy="6.2" r="1.8"/><path d="M3.2 13a8.8 8.8 0 0 0 17.6 0"/><path d="M12 18.6c-2.1 0-3 .4-3 1.6s.9 1.8 3 1.8 3-.6 3-1.8-.9-1.6-3-1.6z"/>',
+  ranks: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  voyage: '<path d="M3 15l9 4 9-4"/><path d="M5 15V8h14v7"/><path d="M9 8V5h6v3"/><path d="M3 19v1h18v-1"/>',
   expense: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.3C15 8 13.7 7 12 7S9 8 9 9.3s1 1.8 3 1.8 3 .8 3 2.1-1.3 2.1-3 2.1-3-.9-3-2.2"/>',
   payout: '<rect x="2.5" y="6.5" width="19" height="11" rx="2.2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v.01M18 14v.01"/>',
   ledger: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13z"/><path d="M4 18.5A2.5 2.5 0 0 0 6.5 21H20"/>',
@@ -30,7 +31,8 @@ const IC = {
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>',
   ship: '<path d="M3 15l9 4 9-4"/><path d="M5 15V8h14v7"/><path d="M9 8V5h6v3"/><path d="M3 19v1h18v-1"/>',
-  document: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/>'
+  document: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/>'
 };
 
 function icon(name, size) {
@@ -42,60 +44,129 @@ function navIcon(name) {
   return icon(name, 19);
 }
 
-/* ---------- Formatting ---------- */
-function formatCurrencyFromPaise(paise) {
-  const rupees = paise / 100;
-  if (rupees >= 100000) {
-    return "\u20B9" + (rupees / 100000).toFixed(2) + "L";
+/* ---------- Financial Formatting & String-to-Paise Parsing ---------- */
+
+/**
+ * Converts integer paise into standard Indian Rupee string formatting.
+ * ₹150.75 = 15075 paise
+ */
+function formatPaise(paise, showPence = true) {
+  if (paise === null || paise === undefined || isNaN(paise)) return "₹0.00";
+  const sign = paise < 0 ? "-" : "";
+  const absPaise = Math.abs(paise);
+  const rupees = Math.floor(absPaise / 100);
+  const remainder = absPaise % 100;
+  const rupeeFormatted = rupees.toLocaleString("en-IN");
+  if (!showPence && remainder === 0) {
+    return `${sign}₹${rupeeFormatted}`;
   }
-  return "\u20B9" + rupees.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+  return `${sign}₹${rupeeFormatted}.${String(remainder).padStart(2, "0")}`;
 }
 
 function formatCurrencyFull(paise) {
-  const rupees = paise / 100;
-  return "\u20B9" + rupees.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+  return formatPaise(paise, true);
+}
+
+function formatCurrencyFromPaise(paise) {
+  if (paise === null || paise === undefined || isNaN(paise)) return "₹0";
+  const rupees = Math.abs(paise) / 100;
+  const sign = paise < 0 ? "-" : "";
+  if (rupees >= 10000000) return `${sign}₹${(rupees / 10000000).toFixed(2)}Cr`;
+  if (rupees >= 100000) return `${sign}₹${(rupees / 100000).toFixed(2)}L`;
+  if (rupees >= 1000) return `${sign}₹${(rupees / 1000).toFixed(1)}K`;
+  return `${sign}₹${Math.floor(rupees).toLocaleString("en-IN")}`;
 }
 
 function formatRupeesCompact(rupees) {
-  if (rupees >= 100000) return "\u20B9" + (rupees / 100000).toFixed(2) + "L";
-  if (rupees >= 1000) return "\u20B9" + (rupees / 1000).toFixed(1) + "K";
-  return "\u20B9" + rupees.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+  return formatCurrencyFromPaise(rupees * 100);
 }
 
+/**
+ * Exact string-based decimal parser: parses "150.75" -> 15075 integer paise.
+ * Completely immune to JavaScript floating point multiplication quirks.
+ */
+function parseCurrencyToPaise(inputVal) {
+  if (typeof inputVal === "number") {
+    inputVal = inputVal.toString();
+  }
+  if (!inputVal || typeof inputVal !== "string") return 0;
+  
+  // Clean currency symbols, commas, and whitespace
+  let clean = inputVal.replace(/[₹$,\s]/g, "").trim();
+  if (!clean) return 0;
+
+  const isNegative = clean.startsWith("-");
+  if (isNegative) clean = clean.slice(1).trim();
+
+  const parts = clean.split(".");
+  const rupeePart = parseInt(parts[0] || "0", 10) || 0;
+  let paisePart = 0;
+
+  if (parts.length > 1) {
+    const rawPaiseStr = (parts[1] || "").padEnd(2, "0").slice(0, 2);
+    paisePart = parseInt(rawPaiseStr, 10) || 0;
+  }
+
+  const total = (rupeePart * 100) + paisePart;
+  return isNegative ? -total : total;
+}
+
+function shareWeightToDisplay(units) {
+  if (units === null || units === undefined) return "0.0x";
+  return (units / 100).toFixed(2) + "x";
+}
+
+function basisPointsToPercent(bps) {
+  if (bps === null || bps === undefined) return "0.00%";
+  return (bps / 100).toFixed(2) + "%";
+}
+
+/* ---------- Date formatting ---------- */
 function formatDate(dateStr) {
   if (!dateStr) return "—";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d)) return dateStr;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function formatDateShort(dateStr) {
   if (!dateStr) return "—";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d)) return dateStr;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
-
-function shareWeightToDisplay(units) {
-  return (units / 100).toFixed(1) + "x";
 }
 
 /* ---------- Status badges ---------- */
 function getStatusBadge(status) {
+  if (!status) return '<span class="badge badge-default">—</span>';
+  const s = String(status).toLowerCase();
   const map = {
     active: "active", inactive: "inactive",
-    completed: "completed", ongoing: "ongoing", planned: "planned",
-    paid: "paid", calculated: "calculated", pending: "pending",
-    credit: "credit", debit: "debit", payout: "payout"
+    completed: "completed", ongoing: "ongoing", in_progress: "ongoing", planned: "planned", cancelled: "inactive",
+    paid: "paid", finalized: "paid", calculated: "calculated", pending: "pending",
+    credit: "credit", debit: "debit", reversal: "warn", correction: "info",
+    profitable: "active", loss: "inactive", break_even: "warn"
   };
-  const cls = map[status] || "default";
-  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  const cls = map[s] || "default";
+  const label = s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   return `<span class="badge badge-${cls}">${label}</span>`;
 }
 
 /* ---------- Toasts ---------- */
-function showToast(message, type) {
-  type = type || "info";
+function showToast(message, type = "info") {
   const icons = { success: "treasure", error: "alert", info: "flag", warn: "alert" };
   const container = document.querySelector(".toasts") || createToastContainer();
   const toast = document.createElement("div");
@@ -107,7 +178,7 @@ function showToast(message, type) {
   setTimeout(() => {
     toast.classList.remove("visible");
     setTimeout(() => toast.remove(), 260);
-  }, 3200);
+  }, 3500);
 }
 
 function createToastContainer() {
@@ -123,8 +194,8 @@ function openModal(id) {
   if (!m) return;
   m.classList.add("active");
   document.body.classList.add("no-scroll");
-  const focusable = m.querySelector('input, select, textarea, button, [tabindex]');
-  if (focusable) setTimeout(() => focusable.focus(), 200);
+  const focusable = m.querySelector('input, select, textarea, button');
+  if (focusable) setTimeout(() => focusable.focus(), 150);
 }
 
 function closeModal(id) {
@@ -136,85 +207,6 @@ function closeModal(id) {
 function closeAllModals() {
   document.querySelectorAll(".modal-backdrop.active").forEach(m => m.classList.remove("active"));
   document.body.classList.remove("no-scroll");
-}
-
-/* ---------- Sidebar / drawer ---------- */
-function initCommon() {
-  const toggle = document.getElementById("sidebar-toggle");
-  const sidebar = document.getElementById("sidebar");
-  if (!sidebar) return;
-
-  const backdrop = document.createElement("div");
-  backdrop.className = "sidebar-backdrop";
-  backdrop.style.display = "none";
-  document.body.appendChild(backdrop);
-
-  const open = () => {
-    sidebar.classList.add("open");
-    backdrop.style.display = "block";
-    requestAnimationFrame(() => backdrop.classList.add("visible"));
-    document.body.classList.add("no-scroll");
-  };
-  const close = () => {
-    sidebar.classList.remove("open");
-    backdrop.classList.remove("visible");
-    setTimeout(() => { backdrop.style.display = "none"; }, 260);
-    document.body.classList.remove("no-scroll");
-  };
-
-  if (toggle) toggle.addEventListener("click", open);
-  backdrop.addEventListener("click", close);
-  document.querySelectorAll("[data-close-sidebar]").forEach(el => el.addEventListener("click", close));
-  document.querySelectorAll(".nav-link").forEach(el => el.addEventListener("click", close));
-
-  /* Modal close via backdrop / escape / close buttons */
-  document.addEventListener("click", (e) => {
-    if (e.target.classList && e.target.classList.contains("modal-backdrop")) closeAllModals();
-  });
-  document.querySelectorAll(".modal-close").forEach(btn => btn.addEventListener("click", closeAllModals));
-  document.querySelectorAll("[data-dismiss]").forEach(btn => btn.addEventListener("click", closeAllModals));
-  document.querySelectorAll("[data-dismiss-modal]").forEach(btn => btn.addEventListener("click", closeAllModals));
-  document.querySelectorAll(".close-btn").forEach(btn => btn.addEventListener("click", closeAllModals));
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeAllModals();
-      close();
-    }
-  });
-
-  /* Dropdowns */
-  document.querySelectorAll("[data-dropdown]").forEach(trigger => {
-    trigger.addEventListener("click", (e) => {
-      e.stopPropagation();
-      trigger.classList.toggle("open");
-    });
-  });
-  document.addEventListener("click", (e) => {
-    document.querySelectorAll(".dropdown.open").forEach(d => {
-      if (!d.contains(e.target)) d.classList.remove("open");
-    });
-  });
-
-  window.__sidebar = { open, close };
-}
-
-/* ---------- Lookups ---------- */
-function getRankName(rankId) {
-  const r = (typeof MOCK_RANKS !== 'undefined' && MOCK_RANKS.find(r => r.id === rankId));
-  return r ? r.name : "Unknown";
-}
-function getRankShareWeight(rankId) {
-  const r = (typeof MOCK_RANKS !== 'undefined' && MOCK_RANKS.find(r => r.id === rankId));
-  return r ? r.share_weight_units : 0;
-}
-function getVoyageName(voyageId) {
-  const v = (typeof MOCK_VOYAGES !== 'undefined' && MOCK_VOYAGES.find(v => v.id === voyageId));
-  return v ? v.name : "Unknown";
-}
-function getCrewName(crewId) {
-  const c = (typeof MOCK_CREW !== 'undefined' && MOCK_CREW.find(c => c.id === crewId));
-  return c ? c.name : "Unknown";
 }
 
 /* ---------- State builders ---------- */
@@ -230,37 +222,31 @@ function showEmptyState(container, title, subtitle, actionLabel, actionFn) {
   if (btn && actionFn) btn.addEventListener("click", actionFn);
 }
 
-function showLoading(container, text) {
-  container.innerHTML = `<div class="state"><div class="spinner"></div><p class="muted">${text || "Loading..."}<span class="loading-dots"></span></p></div>`;
+function showLoading(container, text = "Loading ledger data...") {
+  container.innerHTML = `<div class="state"><div class="spinner"></div><p class="muted">${text}<span class="loading-dots"></span></p></div>`;
 }
 
 function showError(container, text, retryFn) {
   container.innerHTML = `
     <div class="state state-err">
       <div class="state-visual">${icon('alert')}</div>
-      <h3>Unable to load treasury</h3>
-      <p>${text || "We couldn't retrieve the latest financial records. Please try again."}</p>
-      ${retryFn ? `<button class="btn btn-secondary" id="state-retry">${IconFromErr()}</i><span class="lbl">Try Again</span></button>` : ""}
+      <h3>Treasury Error</h3>
+      <p>${text || "We couldn't retrieve the latest financial records. Please ensure backend is running."}</p>
+      ${retryFn ? `<button class="btn btn-secondary" id="state-retry"><i class="ic">${icon('refresh', 15)}</i><span>Try Again</span></button>` : ""}
     </div>`;
   const btn = container.querySelector("#state-retry");
   if (btn && retryFn) btn.addEventListener("click", retryFn);
 }
 
-function IconFromErr() { return '<i class="ic" aria-hidden="true">' + icon('refresh', 15) + '</i>'; }
-
-function showSkeletonMetrics(container, count) {
+function showSkeletonMetrics(container, count = 4) {
   let html = "";
   for (let i = 0; i < count; i++) {
-    html += `<div class="sk-card skeleton"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w80" style="height:22px;margin-top:18px"></div><div class="skeleton sk-line w60" style="width:45%"></div></div>`;
+    html += `<div class="sk-card skeleton"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w80" style="height:22px;margin-top:18px"></div></div>`;
   }
   container.innerHTML = `<div class="sk-grid">${html}</div>`;
 }
 
-function showSkeletonTable(container) {
-  container.innerHTML = `<div class="sk-table skeleton"></div>`;
-}
-
-/* ---------- Chart theme (shared) ---------- */
+/* ---------- Chart theme ---------- */
 const CHART_THEME = {
   legendColor: "#B7AA93",
   tickColor: "#7F7463",
@@ -272,7 +258,7 @@ const CHART_THEME = {
   info: "#5B91B5",
   warn: "#D6A23C",
   tooltipStyle: {
-    backgroundColor: "rgba(38,32,24,0.96)",
+    backgroundColor: "rgba(23,19,15,0.96)",
     titleColor: "#F1E6D0",
     titleFont: { family: "'Cormorant Garamond', serif", size: 15, weight: 700 },
     bodyColor: "#B7AA93",
@@ -281,77 +267,69 @@ const CHART_THEME = {
     borderWidth: 1,
     padding: 12,
     cornerRadius: 8,
-    boxPadding: 5,
-    caretSize: 6,
-    displayColors: true,
-    boxWidth: 10,
-    boxHeight: 10
-  },
-  tooltipCurrency(label, value) {
-    return {
-      label: label,
-      yAlign: 'top',
-      callbacks: {
-        label: (ctx) => `${ctx.dataset.label}: ${formatRupeesCompact(ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.parsed.x)}`
-      }
-    };
-  },
-  axisYCurrency: (v) => {
-    return (v * 1000 >= 100000) ? formatRupeesCompact(v * 1000).replace(".00", "") : formatRupeesCompact(v * 1000).replace(".00", "");
+    displayColors: true
   },
   baseScales: {
-    x: { ticks: { color: "#7F7463", font: { size: 11 } }, grid: { color: "rgba(64,55,43,0.18)" }, border: { color: "rgba(64,55,43,0.4)" } },
-    y: { ticks: { color: "#7F7463", font: { size: 11 } }, grid: { color: "rgba(64,55,43,0.28)" }, border: { display: false } }
+    x: { ticks: { color: "#7F7463", font: { size: 11 } }, grid: { color: "rgba(64,55,43,0.18)" } },
+    y: { ticks: { color: "#7F7463", font: { size: 11 } }, grid: { color: "rgba(64,55,43,0.28)" } }
   }
 };
 
-/* ---------- Manifest export (writes a downloadable file) ---------- */
-function exportManifest(format) {
-  if (typeof MOCK_CREW === 'undefined') { showToast("Nothing to export yet", "warn"); return; }
-  const payload = {
-    exported_at: new Date().toISOString(),
-    treasury: {
-      ranks: MOCK_RANKS,
-      crew: MOCK_CREW,
-      voyages: MOCK_VOYAGES,
-      income: MOCK_TRANSACTIONS.filter(t => t.type === "credit"),
-      expenses: MOCK_EXPENSES,
-      transactions: MOCK_TRANSACTIONS,
-      payouts: MOCK_PAYOUTS
-    }
-  };
+/* ---------- Sidebar, Global Role Switcher & Modal Handlers ---------- */
+function initCommon() {
+  const toggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.getElementById("sidebar");
 
-  let content, mime, ext;
-  if (format === "csv") {
-    const rows = [["id", "date", "voyage_id", "crew_id", "type", "description", "amount_paise"]];
-    MOCK_TRANSACTIONS.forEach(t => rows.push([t.id, t.date, t.voyage_id, t.crew_id || "", t.type, t.description, t.amount_paise]));
-    content = rows.map(r => r.map(csvCell).join(",")).join("\r\n");
-    mime = "text/csv";
-    ext = "csv";
-  } else {
-    content = JSON.stringify(payload, null, 2);
-    mime = "application/json";
-    ext = "json";
+  if (sidebar) {
+    const backdrop = document.createElement("div");
+    backdrop.className = "sidebar-backdrop";
+    backdrop.style.display = "none";
+    document.body.appendChild(backdrop);
+
+    const open = () => {
+      sidebar.classList.add("open");
+      backdrop.style.display = "block";
+      requestAnimationFrame(() => backdrop.classList.add("visible"));
+      document.body.classList.add("no-scroll");
+    };
+    const close = () => {
+      sidebar.classList.remove("open");
+      backdrop.classList.remove("visible");
+      setTimeout(() => { backdrop.style.display = "none"; }, 260);
+      document.body.classList.remove("no-scroll");
+    };
+
+    if (toggle) toggle.addEventListener("click", open);
+    backdrop.addEventListener("click", close);
   }
 
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `captains-treasury-manifest-${new Date().toISOString().slice(0, 10)}.${ext}`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast(`Manifest exported as ${ext.toUpperCase()}`, "success");
+  // Global modal listeners
+  document.addEventListener("click", (e) => {
+    if (e.target.classList && e.target.classList.contains("modal-backdrop")) closeAllModals();
+    if (e.target.closest(".modal-close") || e.target.closest("[data-dismiss-modal]")) closeAllModals();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllModals();
+  });
+
+  // Attach Role Switcher in Sidebar
+  const captainCard = document.querySelector(".captain-card");
+  if (captainCard && !captainCard.hasAttribute("data-role-clickable")) {
+    captainCard.setAttribute("data-role-clickable", "true");
+    captainCard.style.cursor = "pointer";
+    captainCard.title = "Click to switch role (Captain / Admin / Crew)";
+    captainCard.addEventListener("click", () => {
+      const current = Auth.getCurrentRole();
+      const roles = ["captain", "admin", "crew"];
+      const nextRole = roles[(roles.indexOf(current) + 1) % roles.length];
+      Auth.setRole(nextRole);
+      showToast(`Role switched to: ${nextRole.toUpperCase()}`, "info");
+      setTimeout(() => { window.location.reload(); }, 400);
+    });
+  }
 }
 
-function csvCell(v) {
-  const s = String(v == null ? "" : v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-/* Init once DOM is ready */
-if (typeof document !== 'undefined') {
+if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", initCommon);
 }

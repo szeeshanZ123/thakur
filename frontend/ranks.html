@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crew Roster — Captain's Treasure Ledger</title>
+  <title>Ranks & Share Weights — Captain's Treasure Ledger</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -27,11 +27,11 @@
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg></span>
             <span class="nav-text">Dashboard</span>
           </a>
-          <a href="crew.html" class="nav-link active">
+          <a href="crew.html" class="nav-link">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.7 20c.9-3.4 3.4-5.3 6.3-5.3s5.4 1.9 6.3 5.3"/><circle cx="17.2" cy="9.2" r="2.5"/><path d="M16.5 14.8c2.2.3 4 1.6 4.8 3.9"/></svg></span>
             <span class="nav-text">Crew</span>
           </a>
-          <a href="ranks.html" class="nav-link">
+          <a href="ranks.html" class="nav-link active">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
             <span class="nav-text">Ranks</span>
           </a>
@@ -81,51 +81,35 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div class="page-header-text">
-          <p class="page-eyebrow">Fleet Roster</p>
-          <h1 class="page-title">Crew Members</h1>
-          <p class="page-subtitle">Manage crew enrollment, rank hierarchy assignments, and dividend entitlement.</p>
+          <p class="page-eyebrow">Hierarchy & Shares</p>
+          <h1 class="page-title">Rank Management</h1>
+          <p class="page-subtitle">Configure pirate ranks and exact integer share weight units (100 units = 1.0x dividend share).</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-primary" id="add-crew-btn">Add Crew Member</button>
+          <button class="btn btn-primary" id="add-rank-btn">Add Rank</button>
         </div>
       </header>
 
       <div class="page-content">
         <!-- KPI Cards -->
-        <div class="kpi-grid" id="crew-kpis"></div>
+        <div class="kpi-grid" id="ranks-kpis"></div>
 
-        <!-- Filters Toolbar -->
-        <div class="toolbar">
-          <div class="search-input">
-            <input type="text" id="crew-search" placeholder="Search crew members by name...">
-          </div>
-          <select class="filter-select" id="filter-rank">
-            <option value="">All Ranks</option>
-          </select>
-          <select class="filter-select" id="filter-status">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-
-        <!-- Crew Table Card -->
-        <div class="card">
+        <!-- Ranks Table -->
+        <div class="card" style="margin-top: 24px;">
           <div class="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Crew Member</th>
-                  <th>Rank Assignment</th>
-                  <th>Share Weight</th>
+                  <th>Rank ID</th>
+                  <th>Rank Title</th>
+                  <th>Share Multiplier</th>
+                  <th>Exact Units</th>
                   <th>Status</th>
-                  <th>Enrolled</th>
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="crew-table-body">
-                <tr><td colspan="7" class="empty-row">Loading crew roster...</td></tr>
+              <tbody id="ranks-table-body">
+                <tr><td colspan="6" class="empty-row">Loading ranks...</td></tr>
               </tbody>
             </table>
           </div>
@@ -134,52 +118,35 @@
     </main>
   </div>
 
-  <!-- Add/Edit Crew Modal -->
-  <div class="modal-backdrop" id="crew-modal">
+  <!-- Add / Edit Rank Modal -->
+  <div class="modal-backdrop" id="rank-modal">
     <div class="modal modal-md">
       <div class="modal-header">
-        <h3 id="crew-form-title">Recruit New Crew Member</h3>
+        <h3 id="rank-form-title">Add New Rank</h3>
         <button class="modal-close" aria-label="Close modal">&times;</button>
       </div>
-      <form id="crew-form">
-        <input type="hidden" id="crew-id">
+      <form id="rank-form">
+        <input type="hidden" id="rank-id">
         <div class="modal-body">
           <div class="form-group">
-            <label for="crew-name" class="form-label">Full Name *</label>
-            <input type="text" id="crew-name" class="form-control" placeholder="e.g. Bartholomew Roberts" required>
+            <label for="rank-name" class="form-label">Rank Name *</label>
+            <input type="text" id="rank-name" class="form-control" placeholder="e.g. Master Gunner, Quartermaster" required>
           </div>
           <div class="form-group">
-            <label for="crew-rank" class="form-label">Rank Assignment *</label>
-            <select id="crew-rank" class="form-control" required></select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Assigned Share Weight</label>
-            <input type="text" id="crew-share-display" class="form-control" readonly disabled>
+            <label for="rank-units" class="form-label">Share Weight Units *</label>
+            <input type="number" id="rank-units" class="form-control" min="1" step="1" placeholder="e.g. 150" required>
+            <span class="form-hint" id="rank-share-helper">100 units = 1.00x dividend share multiplier</span>
           </div>
           <div class="form-group" style="display:flex; align-items:center; gap: 8px; margin-top: 12px;">
-            <input type="checkbox" id="crew-active" checked style="width: 18px; height: 18px;">
-            <label for="crew-active" style="cursor: pointer;">Active Roster (Eligible for dividend distribution)</label>
+            <input type="checkbox" id="rank-active" checked style="width: 18px; height: 18px;">
+            <label for="rank-active" style="cursor: pointer;">Active Rank (Eligible for dividend distribution)</label>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss-modal>Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Crew Member</button>
+          <button type="submit" class="btn btn-primary">Save Rank</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Crew Profile Modal -->
-  <div class="modal-backdrop" id="profile-modal">
-    <div class="modal modal-lg">
-      <div class="modal-header">
-        <h3 id="profile-name">Crew Profile</h3>
-        <button class="modal-close" aria-label="Close modal">&times;</button>
-      </div>
-      <div class="modal-body" id="profile-body"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss-modal>Close</button>
-      </div>
     </div>
   </div>
 
@@ -187,6 +154,6 @@
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/common.js"></script>
-  <script src="js/crew.js"></script>
+  <script src="js/ranks.js"></script>
 </body>
 </html>

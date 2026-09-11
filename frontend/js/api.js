@@ -1,75 +1,340 @@
-const API = {
-  async getRanks() { return [...MOCK_RANKS]; },
-  async getCrew() { return [...MOCK_CREW]; },
-  async getCrewById(id) { return MOCK_CREW.find(c => c.id === id) || null; },
-  async getVoyages() { return [...MOCK_VOYAGES]; },
-  async getVoyageById(id) { return MOCK_VOYAGES.find(v => v.id === id) || null; },
-  async getExpenses() { return [...MOCK_EXPENSES]; },
-  async getExpensesByVoyage(voyageId) { return MOCK_EXPENSES.filter(e => e.voyage_id === voyageId); },
-  async getTransactions() { return [...MOCK_TRANSACTIONS]; },
-  async getTransactionsByCrew(crewId) { return MOCK_TRANSACTIONS.filter(t => t.crew_id === crewId); },
-  async getTransactionsByVoyage(voyageId) { return MOCK_TRANSACTIONS.filter(t => t.voyage_id === voyageId); },
-  async getPayouts() { return [...MOCK_PAYOUTS]; },
-  async getPayoutsByVoyage(voyageId) { return MOCK_PAYOUTS.filter(p => p.voyage_id === voyageId); },
-  async getPayoutsByCrew(crewId) { return MOCK_PAYOUTS.filter(p => p.crew_id === crewId); },
-  async getDashboardKPIs() {
-    const revenue = MOCK_VOYAGES.filter(v => v.status === "completed").reduce((s, v) => s + v.revenue_paise, 0);
-    const expenses = MOCK_EXPENSES.reduce((s, e) => s + e.amount_paise, 0);
-    const paid = MOCK_PAYOUTS.filter(p => p.status === "paid").reduce((s, p) => s + p.payout_paise, 0);
-    const activeCrew = MOCK_CREW.filter(c => c.status === "active").length;
-    const completedVoyages = MOCK_VOYAGES.filter(v => v.status === "completed").length;
+/**
+ * Central API Client for Captain's Treasure Ledger.
+ * Directly integrates with the FastAPI Backend (http://127.0.0.1:8000).
+ * 
+ * CRITICAL FINANCIAL RULES:
+ * - Backend is the single source of truth for all financial math.
+ * - All monetary amounts are communicated as exact INTEGER PAISE.
+ * - All share weights are communicated as exact INTEGER UNITS (100 = 1.0x).
+ * - Frontend performs zero float calculations for financial records.
+ */
+
+const API_CONFIG = {
+  BASE_URL: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") 
+    ? "http://127.0.0.1:8000" 
+    : window.location.origin
+};
+
+class ApiClient {
+  constructor() {
+    this.baseUrl = API_CONFIG.BASE_URL;
+  }
+
+  getRole() {
+    return localStorage.getItem("treasure_user_role") || "captain";
+  }
+
+  setRole(role) {
+    localStorage.setItem("treasure_user_role", role.toLowerCase());
+  }
+
+  getHeaders() {
     return {
-      total_revenue_paise: revenue,
-      total_expenses_paise: expenses,
-      net_profit_paise: revenue - expenses,
-      total_distributed_paise: paid,
-      active_crew: activeCrew,
-      completed_voyages: completedVoyages
-    };
-  },
-  async getAnalytics() {
-    const completed = MOCK_VOYAGES.filter(v => v.status === "completed");
-    const voyageData = completed.map(v => {
-      const exp = MOCK_EXPENSES.filter(e => e.voyage_id === v.id).reduce((s, e) => s + e.amount_paise, 0);
-      return { name: v.name, revenue: v.revenue_paise, expenses: exp, profit: v.revenue_paise - exp };
-    });
-    const totalProfit = voyageData.reduce((s, v) => s + v.profit, 0);
-    const avgProfit = voyageData.length ? totalProfit / voyageData.length : 0;
-    const highest = voyageData.reduce((max, v) => v.profit > max.profit ? v : max, voyageData[0] || { name: "N/A", profit: 0 });
-    const totalRev = voyageData.reduce((s, v) => s + v.revenue, 0);
-    const avgMargin = totalRev ? (totalProfit / totalRev * 10000) : 0;
-    const totalExp = voyageData.reduce((s, v) => s + v.expenses, 0);
-    const expenseRatio = totalRev ? (totalExp / totalRev * 10000) : 0;
-    const expenseBreakdown = {};
-    MOCK_EXPENSES.forEach(e => {
-      expenseBreakdown[e.category] = (expenseBreakdown[e.category] || 0) + e.amount_paise;
-    });
-    const crewEarnings = MOCK_CREW.filter(c => c.status === "active").map(c => {
-      const rank = MOCK_RANKS.find(r => r.id === c.rank_id);
-      const paid = MOCK_PAYOUTS.filter(p => p.crew_id === c.id && p.status === "paid").reduce((s, p) => s + p.payout_paise, 0);
-      return { name: c.name, rank: rank ? rank.name : "Unknown", total_earned: paid };
-    });
-    const revenueByMonth = {};
-    completed.forEach(v => {
-      const m = v.date.substring(0, 7);
-      revenueByMonth[m] = (revenueByMonth[m] || 0) + v.revenue_paise;
-    });
-    const expensesByMonth = {};
-    MOCK_EXPENSES.forEach(e => {
-      const m = e.date.substring(0, 7);
-      expensesByMonth[m] = (expensesByMonth[m] || 0) + e.amount_paise;
-    });
-    return {
-      voyage_data: voyageData,
-      total_profit: totalProfit,
-      avg_profit: Math.round(avgProfit),
-      highest_profit_voyage: highest,
-      avg_profit_margin_bps: Math.round(avgMargin),
-      expense_ratio_bps: Math.round(expenseRatio),
-      expense_breakdown: expenseBreakdown,
-      crew_earnings: crewEarnings,
-      revenue_by_month: revenueByMonth,
-      expenses_by_month: expensesByMonth
+      "Content-Type": "application/json",
+      "X-User-Role": this.getRole()
     };
   }
-};
+
+  async request(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint}`;
+    const config = {
+      ...options,
+      headers: {
+        ...this.getHeaders(),
+        ...(options.headers || {})
+      }
+    };
+
+    try {
+      const response = await fetch(url, config);
+
+      if (response.status === 401) {
+        showToast("Your session has expired. Please log in.", "error");
+        setTimeout(() => { window.location.href = "login.html"; }, 1000);
+        throw new Error("Unauthorized");
+      }
+
+      const isJson = (response.headers.get("content-type") || "").includes("application/json");
+      const data = isJson ? await response.json() : await response.text();
+
+      if (!response.ok) {
+        const errorDetail = (data && data.detail) ? data.detail : (typeof data === "string" ? data : "Request failed");
+        throw new Error(errorDetail);
+      }
+
+      return data;
+    } catch (err) {
+      console.error(`API Error [${options.method || 'GET'} ${endpoint}]:`, err);
+      throw err;
+    }
+  }
+
+  // --- Health & Info ---
+  async health() {
+    return this.request("/health");
+  }
+
+  // --- Ranks API ---
+  async getRanks(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await this.request(`/api/ranks${query ? '?' + query : ''}`);
+    return Array.isArray(res) ? res : (res.items || res.ranks || []);
+  }
+
+  async getRankById(id) {
+    return this.request(`/api/ranks/${id}`);
+  }
+
+  async createRank(data) {
+    return this.request("/api/ranks", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateRank(id, data) {
+    return this.request(`/api/ranks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteRank(id) {
+    return this.request(`/api/ranks/${id}`, {
+      method: "DELETE"
+    });
+  }
+
+  // --- Crew API ---
+  async getCrew(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await this.request(`/api/crew${query ? '?' + query : ''}`);
+    return Array.isArray(res) ? res : (res.items || res.crew || []);
+  }
+
+  async getCrewById(id) {
+    return this.request(`/api/crew/${id}`);
+  }
+
+  async createCrew(data) {
+    return this.request("/api/crew", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateCrew(id, data) {
+    return this.request(`/api/crew/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deactivateCrew(id) {
+    return this.request(`/api/crew/${id}`, {
+      method: "DELETE"
+    });
+  }
+
+  async getCrewLedger(id) {
+    return this.request(`/api/crew/${id}/ledger`);
+  }
+
+  async getCrewBalance(id) {
+    return this.request(`/api/crew/${id}/balance`);
+  }
+
+  // --- Voyages API ---
+  async getVoyages(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await this.request(`/api/voyages${query ? '?' + query : ''}`);
+    return Array.isArray(res) ? res : (res.items || res.voyages || []);
+  }
+
+  async getVoyageById(id) {
+    return this.request(`/api/voyages/${id}`);
+  }
+
+  async createVoyage(data) {
+    return this.request("/api/voyages", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateVoyage(id, data) {
+    return this.request(`/api/voyages/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  }
+
+  async cancelVoyage(id) {
+    return this.request(`/api/voyages/${id}`, {
+      method: "DELETE"
+    });
+  }
+
+  async getVoyageSummary(id) {
+    return this.request(`/api/voyages/${id}/summary`);
+  }
+
+  async postVoyageRevenue(id, revenue_paise, description = "") {
+    return this.request(`/api/voyages/${id}/revenue`, {
+      method: "POST",
+      body: JSON.stringify({ revenue_paise, description })
+    });
+  }
+
+  // --- Expenses API ---
+  async getExpenses(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await this.request(`/api/expenses${query ? '?' + query : ''}`);
+    return Array.isArray(res) ? res : (res.items || res.expenses || []);
+  }
+
+  async getExpenseById(id) {
+    return this.request(`/api/expenses/${id}`);
+  }
+
+  async createExpense(data) {
+    return this.request("/api/expenses", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
+
+  // --- Transactions API ---
+  async getTransactions(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await this.request(`/api/transactions${query ? '?' + query : ''}`);
+    return Array.isArray(res) ? res : (res.items || res.transactions || []);
+  }
+
+  async getTransactionById(id) {
+    return this.request(`/api/transactions/${id}`);
+  }
+
+  async reverseTransaction(id, reason) {
+    return this.request(`/api/transactions/${id}/reverse`, {
+      method: "POST",
+      body: JSON.stringify({ reason })
+    });
+  }
+
+  async correctTransaction(id, new_amount_paise, reason) {
+    return this.request(`/api/transactions/${id}/correct`, {
+      method: "POST",
+      body: JSON.stringify({ new_amount_paise, reason })
+    });
+  }
+
+  // --- Payouts & Dividends API ---
+  async getPayouts(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await this.request(`/api/payouts${query ? '?' + query : ''}`);
+    return Array.isArray(res) ? res : (res.items || res.payouts || []);
+  }
+
+  async previewVoyagePayouts(voyageId) {
+    return this.request(`/api/payouts/voyages/${voyageId}/preview`);
+  }
+
+  async finalizeVoyagePayouts(voyageId) {
+    return this.request(`/api/payouts/voyages/${voyageId}/finalize`, {
+      method: "POST"
+    });
+  }
+
+  async getCrewPayoutHistory(crewId) {
+    return this.request(`/api/payouts/crew/${crewId}/history`);
+  }
+
+  async getCrewPayoutBalance(crewId) {
+    return this.request(`/api/payouts/crew/${crewId}/balance`);
+  }
+
+  // --- Analytics API ---
+  async getDashboardSummary(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/dashboard${query ? '?' + query : ''}`);
+  }
+
+  async getRevenueAnalytics(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/revenue${query ? '?' + query : ''}`);
+  }
+
+  async getExpenseAnalytics(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/expenses${query ? '?' + query : ''}`);
+  }
+
+  async getProfitAnalytics(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/profit${query ? '?' + query : ''}`);
+  }
+
+  async getExpenseCategories(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/expenses/categories${query ? '?' + query : ''}`);
+  }
+
+  async getVoyagesProfitability(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/voyages/profitability${query ? '?' + query : ''}`);
+  }
+
+  async getTopVoyages(limit = 5) {
+    return this.request(`/api/analytics/voyages/top?limit=${limit}`);
+  }
+
+  async getLossMakingVoyages(limit = 5) {
+    return this.request(`/api/analytics/voyages/loss-making?limit=${limit}`);
+  }
+
+  async getCrewEarnings(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/api/analytics/crew/earnings${query ? '?' + query : ''}`);
+  }
+
+  async getRankPayouts() {
+    return this.request("/api/analytics/ranks/payouts");
+  }
+
+  async getTimeSeries(interval = "month") {
+    return this.request(`/api/analytics/timeseries?interval=${interval}`);
+  }
+
+  // --- Exports API ---
+  getExportUrl(voyageId, format = "json") {
+    const ext = format.toLowerCase() === "csv" ? "csv" : "json";
+    return `${this.baseUrl}/api/voyages/${voyageId}/export/${ext}`;
+  }
+
+  async downloadExport(voyageId, format = "json") {
+    const url = this.getExportUrl(voyageId, format);
+    const filename = `voyage_${voyageId}_manifest.${format.toLowerCase()}`;
+
+    try {
+      const res = await fetch(url, { headers: this.getHeaders() });
+      if (!res.ok) throw new Error(`Export failed with HTTP ${res.status}`);
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      showToast(`Manifest downloaded as ${format.toUpperCase()}`, "success");
+    } catch (err) {
+      console.error("Export download failed:", err);
+      showToast(`Export failed: ${err.message}`, "error");
+    }
+  }
+}
+
+// Global API Singleton
+const API = new ApiClient();

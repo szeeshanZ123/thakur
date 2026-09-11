@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voyages — Captain's Treasure Ledger</title>
+  <title>Voyages & Expeditions — Captain's Treasure Ledger</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -11,6 +11,7 @@
 </head>
 <body>
   <div class="app-layout">
+    <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <div class="sidebar-logo-mark" aria-hidden="true">
@@ -18,6 +19,7 @@
         </div>
         <div class="sidebar-logo-text">Captain's<br>Treasure Ledger</div>
       </div>
+      
       <nav class="sidebar-nav" role="navigation" aria-label="Main">
         <div class="nav-group">
           <div class="nav-group-label">Treasury</div>
@@ -29,6 +31,10 @@
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.7 20c.9-3.4 3.4-5.3 6.3-5.3s5.4 1.9 6.3 5.3"/><circle cx="17.2" cy="9.2" r="2.5"/><path d="M16.5 14.8c2.2.3 4 1.6 4.8 3.9"/></svg></span>
             <span class="nav-text">Crew</span>
           </a>
+          <a href="ranks.html" class="nav-link">
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+            <span class="nav-text">Ranks</span>
+          </a>
           <a href="voyages.html" class="nav-link active">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l9 4 9-4"/><path d="M5 15V8h14v7"/><path d="M9 8V5h6v3"/><path d="M3 19v1h18v-1"/></svg></span>
             <span class="nav-text">Voyages</span>
@@ -39,7 +45,7 @@
           </a>
         </div>
         <div class="nav-group">
-          <div class="nav-group-label">Distribution</div>
+          <div class="nav-group-label">Distribution & Audit</div>
           <a href="payouts.html" class="nav-link">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2.2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v.01M18 14v.01"/></svg></span>
             <span class="nav-text">Payouts</span>
@@ -52,62 +58,73 @@
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>
             <span class="nav-text">Analytics</span>
           </a>
+          <a href="profile.html" class="nav-link">
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg></span>
+            <span class="nav-text">Profile</span>
+          </a>
         </div>
       </nav>
-      <div class="captain-card">
-        <div class="avatar">CB</div>
+      
+      <div class="captain-card" title="Click to switch role (Captain / Admin / Crew)">
+        <div class="avatar">EB</div>
         <div class="captain-info">
-          <div class="captain-name">Captain Blackbeard</div>
-          <div class="captain-role">Fleet Commander</div>
+          <div class="captain-name">Captain Edward Teach</div>
+          <div class="captain-role">Captain (Click to switch)</div>
         </div>
       </div>
     </aside>
 
+    <!-- Main Content Area -->
     <main class="main-content">
       <header class="page-header">
         <button class="header-menu-btn" id="sidebar-toggle" aria-label="Open navigation">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div class="page-header-text">
-          <p class="page-eyebrow">Voyage Management</p>
-          <h1 class="page-title">Voyages</h1>
-          <p class="page-subtitle">Track every voyage and its financial performance.</p>
+          <p class="page-eyebrow">Fleet Expeditions</p>
+          <h1 class="page-title">Voyages & Expeditions</h1>
+          <p class="page-subtitle">Track maritime voyages, post treasure revenues, and audit net profit reconciliations.</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-primary" id="add-voyage-btn">New Voyage</button>
+          <button class="btn btn-primary" id="add-voyage-btn">Plan New Voyage</button>
         </div>
       </header>
 
       <div class="page-content">
+        <!-- KPI Cards -->
         <div class="kpi-grid" id="voyage-kpis"></div>
 
+        <!-- Filters Toolbar -->
         <div class="toolbar">
           <div class="search-input">
-            <input type="text" id="voyage-search" placeholder="Search voyages...">
+            <input type="text" id="voyage-search" placeholder="Search voyages by name...">
           </div>
           <select class="filter-select" id="filter-voyage-status">
-            <option value="">All Status</option>
+            <option value="">All Statuses</option>
             <option value="completed">Completed</option>
-            <option value="ongoing">Ongoing</option>
+            <option value="in_progress">In Progress</option>
             <option value="planned">Planned</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
 
+        <!-- Voyages Table Card -->
         <div class="card">
           <div class="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>Voyage</th>
-                  <th>Date</th>
+                  <th>Voyage Name</th>
+                  <th>Expedition Date</th>
                   <th>Status</th>
-                  <th>Revenue</th>
-                  <th>Expenses</th>
-                  <th>Net Profit</th>
+                  <th>Gross Revenue</th>
+                  <th>Description</th>
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="voyage-table-body"></tbody>
+              <tbody id="voyage-table-body">
+                <tr><td colspan="6" class="empty-row">Loading voyages...</td></tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -115,59 +132,68 @@
     </main>
   </div>
 
-  <div class="modal-backdrop" id="modal-add-voyage">
-    <div class="modal">
+  <!-- Create/Edit Voyage Modal -->
+  <div class="modal-backdrop" id="voyage-modal">
+    <div class="modal modal-md">
       <div class="modal-header">
-        <h2>New Voyage</h2>
-        <button class="modal-close" aria-label="Close">&times;</button>
+        <h3 id="voyage-form-title">Plan New Voyage</h3>
+        <button class="modal-close" aria-label="Close modal">&times;</button>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="voyage-name">Voyage Name</label>
-          <input type="text" id="voyage-name" placeholder="e.g. Golden Reef">
-        </div>
-        <div class="form-row">
+      <form id="voyage-form">
+        <input type="hidden" id="voyage-id">
+        <div class="modal-body">
           <div class="form-group">
-            <label for="voyage-date">Date</label>
-            <input type="date" id="voyage-date">
+            <label for="voyage-name" class="form-label">Voyage Name *</label>
+            <input type="text" id="voyage-name" class="form-control" placeholder="e.g. Isla de Muerta Expedition" required>
           </div>
           <div class="form-group">
-            <label for="voyage-status">Status</label>
-            <select id="voyage-status">
-              <option value="planned">Planned</option>
-              <option value="ongoing">Ongoing</option>
+            <label for="voyage-date" class="form-label">Expedition Date *</label>
+            <input type="date" id="voyage-date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="voyage-revenue" class="form-label">Initial Gross Loot (Rupees ₹)</label>
+            <input type="text" id="voyage-revenue" class="form-control" placeholder="e.g. 100000 for ₹100,000">
+            <span class="form-hint">Recorded in integer paise. E.g. ₹100,000 = 10,000,000 paise.</span>
+          </div>
+          <div class="form-group">
+            <label for="voyage-status" class="form-label">Voyage Status *</label>
+            <select id="voyage-status" class="form-control" required>
+              <option value="in_progress">In Progress</option>
               <option value="completed">Completed</option>
+              <option value="planned">Planned</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="voyage-desc" class="form-label">Mission Brief / Description</label>
+            <textarea id="voyage-desc" class="form-control" rows="3" placeholder="Expedition targets, route, and cargo notes..."></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="voyage-desc">Description</label>
-          <textarea id="voyage-desc" placeholder="Describe the voyage..."></textarea>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Voyage</button>
         </div>
-        <div class="form-group">
-          <label for="voyage-revenue">Revenue (paise)</label>
-          <input type="number" id="voyage-revenue" placeholder="Revenue in paise">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-dismiss-modal>Cancel</button>
-        <button class="btn btn-primary" id="save-voyage-btn">Create Voyage</button>
-      </div>
+      </form>
     </div>
   </div>
 
-  <div class="modal-backdrop" id="modal-voyage-detail">
-    <div class="modal" style="max-width:700px">
+  <!-- Voyage Details & Financial Audit Modal -->
+  <div class="modal-backdrop" id="voyage-detail-modal">
+    <div class="modal modal-lg">
       <div class="modal-header">
-        <h2 id="detail-voyage-name">Voyage Details</h2>
-        <button class="modal-close" aria-label="Close">&times;</button>
+        <h3 id="detail-voyage-name">Voyage Details</h3>
+        <button class="modal-close" aria-label="Close modal">&times;</button>
       </div>
       <div class="modal-body" id="detail-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss-modal>Close</button>
+      </div>
     </div>
   </div>
 
-  <script src="js/mock-data.js"></script>
+  <!-- Scripts -->
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/common.js"></script>
   <script src="js/voyages.js"></script>
 </body>

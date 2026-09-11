@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ledger — Captain's Treasure Ledger</title>
+  <title>Immutable Ledger — Captain's Treasure Ledger</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -52,6 +52,17 @@
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>
             <span class="nav-text">Analytics</span>
           </a>
+          <a href="ranks.html" class="nav-link">
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7.5"/><path d="M14 14.66V17c0 .55.45 1 1 1h1.5"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span>
+            <span class="nav-text">Ranks</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-label">Account</div>
+          <a href="profile.html" class="nav-link">
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <span class="nav-text">Profile</span>
+          </a>
         </div>
       </nav>
       <div class="captain-card">
@@ -69,47 +80,105 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div class="page-header-text">
-          <p class="page-eyebrow">Audit Trail</p>
-          <h1 class="page-title">Ledger</h1>
-          <p class="page-subtitle">Complete earnings history for every crew member.</p>
+          <p class="page-eyebrow">Audit & Governance</p>
+          <h1 class="page-title">Immutable Transaction Ledger</h1>
+          <p class="page-subtitle">Append-only chronological audit log of all financial postings and authorized reversals.</p>
         </div>
-        <div class="page-header-actions"></div>
+        <div class="page-header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="loadLedger()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Refresh Ledger
+          </button>
+        </div>
       </header>
 
       <div class="page-content">
-        <div class="toolbar" style="margin-bottom:8px">
-          <select class="filter-select" id="ledger-crew-select" style="min-width:240px">
-            <option value="">Select Crew Member</option>
-          </select>
-        </div>
-
         <div class="immutable-notice">
           <span class="lock-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </span>
           <div class="notice-text">
-            <strong>Immutable Audit History</strong>
-            <p>Historical transactions cannot be edited or deleted. Corrections are recorded as new reversal entries.</p>
+            <strong>Append-Only Accounting Principle:</strong>
+            Historical ledger records are completely immutable. They can never be updated or deleted. Corrections are strictly posted as new compensating REVERSAL records with reference to the original entry.
           </div>
         </div>
 
-        <div class="kpi-grid" id="ledger-kpis" style="display:none"></div>
+        <div class="kpi-grid" id="ledger-kpis"></div>
 
-        <div id="ledger-timeline-container">
-          <div class="state">
-            <div class="state-visual">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13z"/><path d="M4 18.5A2.5 2.5 0 0 0 6.5 21H20"/></svg>
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header flex-between">
+            <div class="card-title">Transaction Log</div>
+            <div class="toolbar" style="margin-bottom:0">
+              <input type="text" class="search-input" id="ledger-search" placeholder="Search descriptions...">
+              <select class="filter-select" id="filter-ledger-voyage">
+                <option value="">All Voyages</option>
+              </select>
+              <select class="filter-select" id="filter-ledger-type">
+                <option value="">All Types</option>
+                <option value="CREDIT">CREDIT (+)</option>
+                <option value="DEBIT">DEBIT (-)</option>
+                <option value="REVERSAL">REVERSAL</option>
+                <option value="CORRECTION">CORRECTION</option>
+              </select>
             </div>
-            <h3>Select a crew member</h3>
-            <p>Choose a crew member from the dropdown above to view their transaction history.</p>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Tx ID</th>
+                    <th>Timestamp</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Voyage / Account</th>
+                    <th>Description</th>
+                    <th>Audit Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ledger-table-body">
+                  <tr><td colspan="7" class="loading-cell">Loading immutable ledger records...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </main>
   </div>
 
-  <script src="js/mock-data.js"></script>
+  <!-- Reversal Modal -->
+  <div class="modal-backdrop" id="reverse-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Audit Reversal</h3>
+        <button class="modal-close" onclick="closeModal('reverse-modal')">&times;</button>
+      </div>
+      <form id="reverse-form">
+        <div class="modal-body">
+          <input type="hidden" id="reverse-tx-id">
+          <div class="alert alert-warning" style="margin-bottom:1rem;">
+            <strong>Warning:</strong> Reversing this transaction will create an offsetting journal entry in the immutable ledger.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target Transaction</label>
+            <div id="reverse-tx-desc" style="padding:0.6rem 0.8rem; background:var(--bg-secondary); border-radius:6px; font-family:var(--font-mono); font-size:0.85rem;"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reverse-reason">Audit Reason <span class="required">*</span></label>
+            <textarea id="reverse-reason" class="form-control" rows="3" placeholder="Explain the justification for this reversal entry..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('reverse-modal')">Cancel</button>
+          <button type="submit" class="btn btn-danger">Post Reversal Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/common.js"></script>
   <script src="js/ledger.js"></script>
 </body>

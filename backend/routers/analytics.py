@@ -65,6 +65,11 @@ def _verify_analytics_role(role: Optional[str] = None, allow_crew: bool = True) 
     summary="High-Level Treasury Dashboard KPIs",
     description="Retrieve consolidated treasury summary including total revenue, expenses, net profit, distributable dividends, voyage counts, and active crew."
 )
+@router.get(
+    "/dashboard",
+    response_model=DashboardSummaryResponse,
+    summary="High-Level Treasury Dashboard KPIs (Alias)"
+)
 def read_dashboard_summary(
     start_date: Optional[datetime] = Query(None, description="Filter records starting on or after date"),
     end_date: Optional[datetime] = Query(None, description="Filter records ending on or before date"),
@@ -117,6 +122,11 @@ def read_expense_analytics(
     response_model=ExpenseBreakdownResponse,
     summary="Expense Category Percentage Breakdown",
     description="Retrieve itemized expense category amounts and percentage basis points for Chart.js doughnut and pie charts."
+)
+@router.get(
+    "/expenses/categories",
+    response_model=ExpenseBreakdownResponse,
+    summary="Expense Category Percentage Breakdown (Alias)"
 )
 def read_expense_by_category(
     start_date: Optional[datetime] = Query(None, description="Start date filter"),
@@ -206,6 +216,11 @@ def read_top_voyages(
     summary="Loss-Making Expeditions",
     description="Retrieve expeditions operating at a loss (net_profit_paise < 0), ordered by largest loss first."
 )
+@router.get(
+    "/voyages/loss-making",
+    response_model=LossVoyagesResponse,
+    summary="Loss-Making Expeditions (Alias)"
+)
 def read_loss_making_voyages(
     limit: Optional[int] = Query(None, ge=1, le=50, description="Optional maximum limit"),
     start_date: Optional[datetime] = Query(None, description="Start date filter"),
@@ -263,6 +278,11 @@ def read_rank_payout_analytics(
     response_model=TimeSeriesResponse,
     summary="Time-Series Revenue, Expense, and Profit Trends",
     description="Retrieve time-series financial aggregates grouped by 'daily', 'weekly', or 'monthly' periods for Chart.js line and bar charts."
+)
+@router.get(
+    "/timeseries",
+    response_model=TimeSeriesResponse,
+    summary="Time-Series Revenue, Expense, and Profit Trends (Alias)"
 )
 def read_time_series_analytics(
     group_by: str = Query("monthly", description="Granularity: 'daily', 'weekly', or 'monthly'"),

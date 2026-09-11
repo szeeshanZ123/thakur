@@ -14,8 +14,8 @@ class VoyageBase(BaseModel):
     revenue_paise: int = Field(default=0, strict=True, ge=0, description="Gross loot revenue in integer paise (₹1 = 100 paise)")
     status: str = Field(
         default="planned",
-        pattern="^(planned|ongoing|completed|cancelled)$",
-        description="Voyage status (planned, ongoing, completed, cancelled)"
+        pattern="^(planned|ongoing|in_progress|completed|cancelled)$",
+        description="Voyage status (planned, ongoing, in_progress, completed, cancelled)"
     )
 
     @field_validator("name")
@@ -38,7 +38,7 @@ class VoyageUpdate(BaseModel):
     date: Optional[datetime] = None
     description: Optional[str] = None
     revenue_paise: Optional[int] = Field(None, strict=True, ge=0)
-    status: Optional[str] = Field(None, pattern="^(planned|ongoing|completed|cancelled)$")
+    status: Optional[str] = Field(None, pattern="^(planned|ongoing|in_progress|completed|cancelled)$")
 
     @field_validator("name")
     @classmethod

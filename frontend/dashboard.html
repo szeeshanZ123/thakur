@@ -11,6 +11,7 @@
 </head>
 <body>
   <div class="app-layout">
+    <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <div class="sidebar-logo-mark" aria-hidden="true">
@@ -18,6 +19,7 @@
         </div>
         <div class="sidebar-logo-text">Captain's<br>Treasure Ledger</div>
       </div>
+      
       <nav class="sidebar-nav" role="navigation" aria-label="Main">
         <div class="nav-group">
           <div class="nav-group-label">Treasury</div>
@@ -29,6 +31,10 @@
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.7 20c.9-3.4 3.4-5.3 6.3-5.3s5.4 1.9 6.3 5.3"/><circle cx="17.2" cy="9.2" r="2.5"/><path d="M16.5 14.8c2.2.3 4 1.6 4.8 3.9"/></svg></span>
             <span class="nav-text">Crew</span>
           </a>
+          <a href="ranks.html" class="nav-link">
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+            <span class="nav-text">Ranks</span>
+          </a>
           <a href="voyages.html" class="nav-link">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l9 4 9-4"/><path d="M5 15V8h14v7"/><path d="M9 8V5h6v3"/><path d="M3 19v1h18v-1"/></svg></span>
             <span class="nav-text">Voyages</span>
@@ -39,7 +45,7 @@
           </a>
         </div>
         <div class="nav-group">
-          <div class="nav-group-label">Distribution</div>
+          <div class="nav-group-label">Distribution & Audit</div>
           <a href="payouts.html" class="nav-link">
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2.2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v.01M18 14v.01"/></svg></span>
             <span class="nav-text">Payouts</span>
@@ -52,17 +58,24 @@
             <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>
             <span class="nav-text">Analytics</span>
           </a>
+          <a href="profile.html" class="nav-link">
+            <span class="nav-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg></span>
+            <span class="nav-text">Profile</span>
+          </a>
         </div>
       </nav>
-      <div class="captain-card">
-        <div class="avatar">CB</div>
+      
+      <!-- Captain Card & Role Switcher -->
+      <div class="captain-card" title="Click to switch role (Captain / Admin / Crew)">
+        <div class="avatar">EB</div>
         <div class="captain-info">
-          <div class="captain-name">Captain Blackbeard</div>
-          <div class="captain-role">Fleet Commander</div>
+          <div class="captain-name">Captain Edward Teach</div>
+          <div class="captain-role">Captain (Click to switch)</div>
         </div>
       </div>
     </aside>
 
+    <!-- Main Content Area -->
     <main class="main-content">
       <header class="page-header">
         <button class="header-menu-btn" id="sidebar-toggle" aria-label="Open navigation">
@@ -70,51 +83,78 @@
         </button>
         <div class="page-header-text">
           <p class="page-eyebrow">Fleet Overview</p>
-          <h1 class="page-title">Dashboard</h1>
-          <p class="page-subtitle">Your fleet's financial command center.</p>
+          <h1 class="page-title">Financial Dashboard</h1>
+          <p class="page-subtitle">Real-time treasury metrics, revenue vs expenses, and voyage distributions.</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-secondary btn-sm" id="load-sample">Load Sample Voyage</button>
+          <button class="btn btn-secondary btn-sm" id="refresh-dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+            <span>Refresh</span>
+          </button>
           <div class="export-wrapper" id="export-btn">
-            <button class="btn btn-secondary btn-sm">Export Manifest</button>
+            <button class="btn btn-secondary btn-sm">Export Manifest ▾</button>
             <div class="export-dropdown">
-              <a href="#" id="export-json">Export JSON</a>
-              <a href="#" id="export-csv">Export CSV</a>
+              <a href="#" id="export-json">Export Latest JSON</a>
+              <a href="#" id="export-csv">Export Latest CSV</a>
             </div>
           </div>
         </div>
       </header>
 
       <div class="page-content">
+        <!-- Live KPI Cards -->
         <div class="kpi-grid" id="kpi-cards"></div>
 
+        <!-- Charts Grid -->
         <div class="charts-grid">
           <div class="card">
-            <div class="card-header"><h3>Revenue vs Expenses</h3></div>
+            <div class="card-header"><h3>Revenue vs Operational Expenses</h3></div>
             <div class="card-body"><div class="chart-container"><canvas id="chart-rev-exp"></canvas></div></div>
           </div>
           <div class="card">
-            <div class="card-header"><h3>Expense Breakdown</h3></div>
+            <div class="card-header"><h3>Expense Category Distribution</h3></div>
             <div class="card-body"><div class="chart-container"><canvas id="chart-expense-type"></canvas></div></div>
           </div>
         </div>
 
-        <div class="charts-grid">
+        <div class="charts-grid" style="margin-top: 24px;">
           <div class="card">
-            <div class="card-header"><h3>Voyage Profitability</h3></div>
+            <div class="card-header"><h3>Voyage Profitability Breakdown</h3></div>
             <div class="card-body"><div class="chart-container"><canvas id="chart-voyage-profit"></canvas></div></div>
           </div>
         </div>
 
-        <h3 class="section-title" style="margin: 24px 0 16px;">Treasury Insights</h3>
-        <div class="insights-grid" id="insights-grid"></div>
+        <!-- Recent Voyages Table -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header flex-between">
+            <h3>Recent Expeditions</h3>
+            <a href="voyages.html" class="btn btn-secondary btn-sm">View All Voyages →</a>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Voyage Name</th>
+                  <th>Expedition Date</th>
+                  <th>Status</th>
+                  <th>Gross Revenue</th>
+                  <th>Manifest Export</th>
+                </tr>
+              </thead>
+              <tbody id="recent-voyages-body">
+                <tr><td colspan="5" class="empty-row">Loading recent voyages...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script src="js/mock-data.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/common.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
