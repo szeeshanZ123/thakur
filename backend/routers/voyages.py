@@ -13,8 +13,10 @@ from backend.models.voyage import Voyage
 from backend.models.expense import Expense
 from backend.models.transaction import TransactionLog
 from backend.models.payout import Payout
+from backend.models.user import User
 from backend.schemas.voyage import VoyageCreate, VoyageUpdate, VoyageResponse
 from backend.schemas.analytics import PaginatedResponse
+from backend.dependencies.auth import require_crew_or_above, require_captain
 
 router = APIRouter(prefix="/api/voyages", tags=["Voyages"])
 
@@ -48,7 +50,8 @@ def list_voyages(
     date_to: Optional[datetime] = Query(None, description="Filter departure date on or before"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve paginated voyages with optional name search, status, and date range filters."""
     query = db.query(Voyage).options(joinedload(Voyage.expenses))
@@ -79,7 +82,8 @@ def list_voyages(
 @router.post("", response_model=VoyageResponse, status_code=status.HTTP_201_CREATED, summary="Log a new voyage")
 def create_voyage(
     payload: VoyageCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """Create a new expedition record with gross loot revenue in integer paise."""
     voyage = Voyage(
@@ -99,7 +103,8 @@ def create_voyage(
 @router.get("/{voyage_id}", response_model=VoyageResponse, summary="Get voyage by ID")
 def get_voyage(
     voyage_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve detailed voyage metrics, gross revenue, and operational expenses."""
     voyage = db.query(Voyage).options(joinedload(Voyage.expenses)).filter(Voyage.id == voyage_id).first()
@@ -115,7 +120,8 @@ def get_voyage(
 def update_voyage(
     voyage_id: int,
     payload: VoyageUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """Update voyage parameters, gross revenue, or status."""
     voyage = db.query(Voyage).options(joinedload(Voyage.expenses)).filter(Voyage.id == voyage_id).first()
@@ -144,7 +150,8 @@ def update_voyage(
 @router.delete("/{voyage_id}", status_code=status.HTTP_200_OK, summary="Delete an unfinalized empty voyage")
 def delete_voyage(
     voyage_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """
     Delete a voyage only if it contains no recorded expenses, transactions, or payouts.

@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 from backend.core.database import get_db
 from backend.models.transaction import TransactionLog
 from backend.models.voyage import Voyage
+from backend.models.user import User
 from backend.schemas.transaction import TransactionResponse
 from backend.schemas.analytics import PaginatedResponse
+from backend.dependencies.auth import require_crew_or_above
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
@@ -26,7 +28,8 @@ def list_transactions(
     date_to: Optional[datetime] = Query(None, description="Filter timestamp on or before"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve paginated immutable transaction history ordered chronologically by timestamp descending."""
     query = db.query(TransactionLog)
@@ -56,7 +59,8 @@ def list_transactions(
 @router.get("/{transaction_id}", response_model=TransactionResponse, summary="Get transaction by ID")
 def get_transaction(
     transaction_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve details for a single immutable transaction record."""
     tx = db.query(TransactionLog).filter(TransactionLog.id == transaction_id).first()
@@ -71,7 +75,8 @@ def get_transaction(
 @router.get("/voyage/{voyage_id}", response_model=List[TransactionResponse], summary="Get chronological audit timeline for a voyage")
 def get_voyage_transactions(
     voyage_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """
     Retrieve all audit transactions for a specific voyage sorted by timestamp ascending

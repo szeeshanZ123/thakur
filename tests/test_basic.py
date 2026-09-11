@@ -21,6 +21,8 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.main import app
+from backend.models.user import User
+from backend.dependencies.auth import get_current_active_user, require_captain
 from ai.llm import LLMClient
 from ai.prompts import format_hackathon_prompt, build_analysis_prompt
 from ai.utils import extract_json_from_response, estimate_tokens, clean_text
@@ -31,12 +33,14 @@ from ml.prediction import make_prediction
 
 @fixture
 def client():
+    mock_user = User(id=1, username="test_user", email="test@local", role="ADMIN", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: mock_user
+    app.dependency_overrides[require_captain] = lambda: mock_user
     return TestClient(app)
 
 
-@fixture
-def sample_dataset():
-
+def _make_sample_dataset():
+    """Plain helper that builds the sample DataFrame (callable without pytest)."""
     np.random.seed(42)
     n = 100
     df = pd.DataFrame({
@@ -46,6 +50,11 @@ def sample_dataset():
         "label": np.random.choice([0, 1], n)
     })
     return df
+
+
+@fixture
+def sample_dataset():
+    return _make_sample_dataset()
 
 
 # --- 1. AI Layer Tests ---
@@ -191,19 +200,22 @@ if __name__ == "__main__":
     import pathlib
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_p = pathlib.Path(temp_dir)
-        df_sample = sample_dataset()
+        df_sample = _make_sample_dataset()
         test_ml_preprocessing_and_training(df_sample, tmp_p)
     print("  -> Passed")
 
     # 3. Backend API tests
     print("[6/7] Testing FastAPI Health endpoint...")
+    mock_user = User(id=1, username="test_user", email="test@local", role="ADMIN", is_active=True)
+    app.dependency_overrides[get_current_active_user] = lambda: mock_user
+    app.dependency_overrides[require_captain] = lambda: mock_user
     c = TestClient(app)
     test_backend_health_endpoint(c)
     print("  -> Passed")
 
     print("[7/7] Testing Backend AI & ML endpoints...")
     test_backend_ai_generate_endpoint(c)
-    test_backend_ml_train_and_predict_flow(c, sample_dataset())
+    test_backend_ml_train_and_predict_flow(c, _make_sample_dataset())
     print("  -> Passed")
 
     print("=" * 60)

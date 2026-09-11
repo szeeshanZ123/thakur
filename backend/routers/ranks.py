@@ -10,7 +10,9 @@ from sqlalchemy.exc import IntegrityError
 from backend.core.database import get_db
 from backend.models.rank import Rank
 from backend.models.crew import CrewMember
+from backend.models.user import User
 from backend.schemas.rank import RankCreate, RankUpdate, RankResponse
+from backend.dependencies.auth import require_crew_or_above, require_captain
 
 router = APIRouter(prefix="/api/ranks", tags=["Ranks"])
 
@@ -18,7 +20,8 @@ router = APIRouter(prefix="/api/ranks", tags=["Ranks"])
 @router.get("", response_model=List[RankResponse], summary="List all pirate ranks")
 def list_ranks(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve all configurable pirate ranks and their integer share weights."""
     query = db.query(Rank)
@@ -30,7 +33,8 @@ def list_ranks(
 @router.post("", response_model=RankResponse, status_code=status.HTTP_201_CREATED, summary="Create a new pirate rank")
 def create_rank(
     payload: RankCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """Create a new rank with configurable positive integer share units (e.g., 200 for 2.0x)."""
     # Check for duplicate rank name
@@ -62,7 +66,8 @@ def create_rank(
 @router.get("/{rank_id}", response_model=RankResponse, summary="Get rank by ID")
 def get_rank(
     rank_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve details for a specific pirate rank."""
     rank = db.query(Rank).filter(Rank.id == rank_id).first()
@@ -78,7 +83,8 @@ def get_rank(
 def update_rank(
     rank_id: int,
     payload: RankUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """
     Update rank metadata or share weight units.
@@ -114,7 +120,8 @@ def update_rank(
 @router.delete("/{rank_id}", response_model=RankResponse, summary="Delete or deactivate a pirate rank")
 def delete_rank(
     rank_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """
     Safely deactivate or remove a rank.

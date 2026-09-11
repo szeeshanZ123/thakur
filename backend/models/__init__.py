@@ -10,6 +10,7 @@ from backend.models.voyage import Voyage
 from backend.models.expense import Expense
 from backend.models.transaction import TransactionLog
 from backend.models.payout import Payout
+from backend.models.user import User
 
 __all__ = [
     "Base",
@@ -19,4 +20,5 @@ __all__ = [
     "Expense",
     "TransactionLog",
     "Payout",
+    "User",
 ]

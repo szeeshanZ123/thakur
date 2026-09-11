@@ -12,8 +12,10 @@ from backend.core.database import get_db
 from backend.models.expense import Expense
 from backend.models.voyage import Voyage
 from backend.models.transaction import TransactionLog
+from backend.models.user import User
 from backend.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
 from backend.schemas.analytics import PaginatedResponse
+from backend.dependencies.auth import require_crew_or_above, require_captain
 
 router = APIRouter(prefix="/api/expenses", tags=["Expenses"])
 
@@ -26,7 +28,8 @@ def list_expenses(
     date_to: Optional[datetime] = Query(None, description="Filter incurred on or before"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve paginated operational expenses with optional voyage, category, and date range filters."""
     query = db.query(Expense)
@@ -56,7 +59,8 @@ def list_expenses(
 @router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED, summary="Record a new operational expense")
 def create_expense(
     payload: ExpenseCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """Record an operational expense against an expedition in integer paise."""
     # Verify voyage exists
@@ -84,7 +88,8 @@ def create_expense(
 @router.get("/{expense_id}", response_model=ExpenseResponse, summary="Get expense by ID")
 def get_expense(
     expense_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve details for a single operational expense entry."""
     expense = db.query(Expense).filter(Expense.id == expense_id).first()
@@ -100,7 +105,8 @@ def get_expense(
 def update_expense(
     expense_id: int,
     payload: ExpenseUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """
     Update an unposted expense entry.
@@ -142,7 +148,8 @@ def update_expense(
 @router.delete("/{expense_id}", status_code=status.HTTP_200_OK, summary="Delete an unposted operational expense")
 def delete_expense(
     expense_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """
     Delete an unposted expense.

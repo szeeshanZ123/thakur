@@ -26,6 +26,18 @@ MODEL_SAVE_DIR = os.getenv("MODEL_SAVE_DIR", "models/")
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/treasure_ledger.db")
 
+# Authentication & Security settings
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "pirate-treasure-ledger-secret-key-change-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
+
+# CORS settings
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://127.0.0.1:5500,http://localhost:5500").split(",")
+    if origin.strip()
+]
+
 # Ensure SQLite parent directory exists if using default local path
 if DATABASE_URL.startswith("sqlite:///"):
     sqlite_path = DATABASE_URL.replace("sqlite:///", "")

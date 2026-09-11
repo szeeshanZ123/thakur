@@ -52,6 +52,14 @@ from backend.schemas.analytics import (
     PaginationParams,
     PaginatedResponse,
 )
+from backend.schemas.auth import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    UserPublicResponse,
+    TokenResponse,
+    UserStatusUpdate,
+    UserRoleUpdate,
+)
 
 __all__ = [
     # Rank schemas
@@ -96,4 +104,11 @@ __all__ = [
     "CrewEarningsResponse",
     "PaginationParams",
     "PaginatedResponse",
+    # Auth schemas
+    "UserRegisterRequest",
+    "UserLoginRequest",
+    "UserPublicResponse",
+    "TokenResponse",
+    "UserStatusUpdate",
+    "UserRoleUpdate",
 ]

@@ -11,8 +11,10 @@ from backend.core.database import get_db
 from backend.models.crew import CrewMember
 from backend.models.rank import Rank
 from backend.models.payout import Payout
+from backend.models.user import User
 from backend.schemas.crew import CrewCreate, CrewUpdate, CrewResponse, CrewLedgerEntry
 from backend.schemas.analytics import PaginatedResponse
+from backend.dependencies.auth import require_crew_or_above, require_captain
 
 router = APIRouter(prefix="/api/crew", tags=["Crew"])
 
@@ -38,7 +40,8 @@ def list_crew(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve paginated crew members with optional search, rank, and active status filters."""
     query = db.query(CrewMember).options(joinedload(CrewMember.rank))
@@ -67,7 +70,8 @@ def list_crew(
 @router.post("", response_model=CrewResponse, status_code=status.HTTP_201_CREATED, summary="Enroll a new crew member")
 def create_crew_member(
     payload: CrewCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """Enroll a new pirate and assign a valid rank."""
     # Verify rank exists and is active
@@ -98,7 +102,8 @@ def create_crew_member(
 @router.get("/{crew_id}", response_model=CrewResponse, summary="Get crew member by ID")
 def get_crew_member(
     crew_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve details for an individual crew member."""
     crew = db.query(CrewMember).options(joinedload(CrewMember.rank)).filter(CrewMember.id == crew_id).first()
@@ -114,7 +119,8 @@ def get_crew_member(
 def update_crew_member(
     crew_id: int,
     payload: CrewUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """Update crew member details (name, rank promotion/demotion, or active status)."""
     crew = db.query(CrewMember).options(joinedload(CrewMember.rank)).filter(CrewMember.id == crew_id).first()
@@ -147,7 +153,8 @@ def update_crew_member(
 @router.delete("/{crew_id}", response_model=CrewResponse, summary="Deactivate a crew member")
 def delete_crew_member(
     crew_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    captain_user: User = Depends(require_captain)
 ):
     """
     Soft-deactivates a crew member (is_active=False).
@@ -169,7 +176,8 @@ def delete_crew_member(
 @router.get("/{crew_id}/ledger", response_model=List[CrewLedgerEntry], summary="Get individual pirate ledger history")
 def get_crew_ledger(
     crew_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crew_or_above)
 ):
     """Retrieve the complete chronological dividend payout history for a crew member."""
     crew = db.query(CrewMember).options(joinedload(CrewMember.rank)).filter(CrewMember.id == crew_id).first()

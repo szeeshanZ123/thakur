@@ -6,8 +6,9 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Union
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -18,8 +19,11 @@ from ai.llm import llm_client
 from ai.prompts import DEFAULT_SYSTEM_PROMPT
 from ml.model import train_baseline_model, save_model, load_model, DEFAULT_MODEL_PATH
 from ml.prediction import make_prediction
+from backend.core.config import ALLOWED_ORIGINS
 from backend.core.database import init_db
 import backend.models  # Ensures all ORM models are registered with Base.metadata
+from backend.models.user import User
+from backend.dependencies.auth import get_current_active_user, require_captain
 import pandas as pd
 
 load_dotenv()
@@ -38,11 +42,34 @@ def startup_event():
 # Enable CORS for frontend integrations
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Custom OpenAPI configuration for Swagger Bearer Authentication
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Enter your JWT Bearer token obtained from POST /api/auth/login"
+        }
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Register Core API Routers
 from backend.routers import (
@@ -51,8 +78,12 @@ from backend.routers import (
     voyages_router,
     expenses_router,
     transactions_router,
+    auth_router,
+    users_router,
 )
 
+app.include_router(auth_router)
+app.include_router(users_router)
 app.include_router(ranks_router)
 app.include_router(crew_router)
 app.include_router(voyages_router)
@@ -129,7 +160,10 @@ def health_check():
 
 
 @app.post("/api/ai/generate", response_model=AIGenerateResponse)
-def ai_generate(request: AIGenerateRequest):
+def ai_generate(
+    request: AIGenerateRequest,
+    current_user: User = Depends(get_current_active_user)
+):
     """Generate AI response using configured LLM provider or fallback mock."""
     try:
         res = llm_client.generate(
@@ -147,7 +181,10 @@ def ai_generate(request: AIGenerateRequest):
 
 
 @app.post("/api/ml/predict", response_model=MLPredictResponse)
-def ml_predict(request: MLPredictRequest):
+def ml_predict(
+    request: MLPredictRequest,
+    current_user: User = Depends(get_current_active_user)
+):
     """Run model inference on input features."""
     res = make_prediction(request.data)
     if not res.get("success"):
@@ -165,7 +202,10 @@ def ml_predict(request: MLPredictRequest):
 
 
 @app.post("/api/ml/train", response_model=MLTrainResponse)
-def ml_train(request: MLTrainRequest):
+def ml_train(
+    request: MLTrainRequest,
+    captain_user: User = Depends(require_captain)
+):
     """Train baseline ML pipeline on provided tabular dataset and save model."""
     try:
         df = pd.DataFrame(request.records)

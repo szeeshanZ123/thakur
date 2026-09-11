@@ -24,6 +24,14 @@ from backend.models.voyage import Voyage
 from backend.models.expense import Expense
 from backend.models.transaction import TransactionLog
 from backend.models.payout import Payout
+from backend.models.user import User
+from backend.dependencies.auth import (
+    get_current_user,
+    get_current_active_user,
+    require_captain,
+    require_crew_or_above,
+    require_admin,
+)
 
 
 def get_test_client_and_session():
@@ -48,7 +56,15 @@ def get_test_client_and_session():
         finally:
             db.close()
 
+    mock_admin = User(id=1, username="test_admin", email="admin@test.local", role="ADMIN", is_active=True)
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = lambda: mock_admin
+    app.dependency_overrides[get_current_active_user] = lambda: mock_admin
+    app.dependency_overrides[require_crew_or_above] = lambda: mock_admin
+    app.dependency_overrides[require_captain] = lambda: mock_admin
+    app.dependency_overrides[require_admin] = lambda: mock_admin
+
     client = TestClient(app)
     return client, TestingSessionLocal(), engine, tmp_dir
 
