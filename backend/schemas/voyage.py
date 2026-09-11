@@ -72,3 +72,23 @@ class VoyageSummary(BaseModel):
     status: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class VoyageFinancialSummaryResponse(BaseModel):
+    """Financial snapshot response for a voyage with zero-loss integer paise metrics."""
+    voyage_id: int
+    voyage_name: str
+    revenue_paise: int = Field(..., description="Effective gross revenue in integer paise")
+    expenses_paise: int = Field(..., description="Effective operational expenses in integer paise")
+    net_profit_paise: int = Field(..., description="Net profit (revenue - expenses) in integer paise; can be negative (loss)")
+    distributable_profit_paise: int = Field(..., description="Distributable profit in integer paise; 0 if net_profit <= 0")
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RevenuePostRequest(BaseModel):
+    """Request payload for posting gross voyage revenue as an immutable CREDIT transaction."""
+    revenue_paise: Optional[int] = Field(None, strict=True, gt=0, description="Optional gross revenue in integer paise")
+    description: Optional[str] = Field(None, description="Audit note or revenue description")
+

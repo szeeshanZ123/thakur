@@ -18,11 +18,21 @@ from ai.llm import llm_client
 from ai.prompts import DEFAULT_SYSTEM_PROMPT
 from ml.model import train_baseline_model, save_model, load_model, DEFAULT_MODEL_PATH
 from ml.prediction import make_prediction
-from backend.core.database import init_db
+import logging
+from sqlalchemy import text
+from backend.core.config import CORS_ORIGINS, ENVIRONMENT
+from backend.core.database import init_db, engine
 import backend.models  # Ensures all ORM models are registered with Base.metadata
 import pandas as pd
 
 load_dotenv()
+
+# Setup structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("treasure_ledger")
 
 app = FastAPI(
     title="Captain's Treasure Ledger API",
@@ -32,17 +42,41 @@ app = FastAPI(
 
 @app.on_event("startup")
 def startup_event():
-    """Initialize database tables on application startup."""
+    """Initialize database tables on application startup and log startup status."""
+    logger.info("Starting Captain's Treasure Ledger API backend...")
     init_db()
+    logger.info("Database schema verified and tables initialized successfully.")
 
-# Enable CORS for frontend integrations
+# Enable CORS for frontend integrations with configurable origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register Core API Routers
+from backend.routers import (
+    ranks_router,
+    crew_router,
+    voyages_router,
+    expenses_router,
+    transactions_router,
+    payouts_router,
+    analytics_router,
+    exports_router,
+)
+
+app.include_router(ranks_router)
+app.include_router(crew_router)
+app.include_router(voyages_router)
+app.include_router(expenses_router)
+app.include_router(transactions_router)
+app.include_router(payouts_router)
+app.include_router(analytics_router)
+app.include_router(exports_router)
+
 
 
 # --- Request & Response Models ---
@@ -53,6 +87,7 @@ class HealthResponse(BaseModel):
     environment: str
     model_loaded: bool
     llm_provider: str
+    database_healthy: bool = True
 
 
 class AIGenerateRequest(BaseModel):
@@ -102,15 +137,26 @@ class MLTrainResponse(BaseModel):
 
 @app.get("/health", response_model=HealthResponse)
 def health_check():
-    """Health check endpoint to verify backend status, environment, and loaded assets."""
+    """Health check endpoint to verify backend status, environment, database connectivity, and loaded assets."""
     is_model_loaded = os.path.exists(DEFAULT_MODEL_PATH)
+    db_healthy = False
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            db_healthy = True
+    except Exception as e:
+        logger.error(f"Health check database connection error: {e}")
+        db_healthy = False
+
     return HealthResponse(
-        status="healthy",
+        status="healthy" if db_healthy else "degraded",
         timestamp=datetime.utcnow().isoformat(),
         environment=os.getenv("ENVIRONMENT", "development"),
         model_loaded=is_model_loaded,
-        llm_provider=llm_client.provider
+        llm_provider=llm_client.provider,
+        database_healthy=db_healthy
     )
+
 
 
 @app.post("/api/ai/generate", response_model=AIGenerateResponse)

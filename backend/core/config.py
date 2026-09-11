@@ -26,6 +26,30 @@ MODEL_SAVE_DIR = os.getenv("MODEL_SAVE_DIR", "models/")
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/treasure_ledger.db")
 
+# CORS and Frontend settings
+CORS_ORIGINS_RAW = os.getenv("CORS_ORIGINS", "")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5500",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8080",
+]
+
+if CORS_ORIGINS_RAW.strip():
+    CORS_ORIGINS = [orig.strip() for orig in CORS_ORIGINS_RAW.split(",") if orig.strip()]
+else:
+    CORS_ORIGINS = DEFAULT_CORS_ORIGINS
+
+if FRONTEND_URL and FRONTEND_URL not in CORS_ORIGINS:
+    CORS_ORIGINS.append(FRONTEND_URL)
+
 # Ensure SQLite parent directory exists if using default local path
 if DATABASE_URL.startswith("sqlite:///"):
     sqlite_path = DATABASE_URL.replace("sqlite:///", "")
@@ -34,3 +58,4 @@ if DATABASE_URL.startswith("sqlite:///"):
     else:
         sqlite_file = Path(sqlite_path)
     os.makedirs(sqlite_file.parent, exist_ok=True)
+

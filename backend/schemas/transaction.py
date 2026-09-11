@@ -41,3 +41,15 @@ class TransactionCreateInternal(BaseModel):
     description: str = Field(..., min_length=1, max_length=255)
     reference_type: Optional[str] = None
     reference_id: Optional[int] = None
+
+
+class TransactionReversalRequest(BaseModel):
+    """Request payload for reversing an existing transaction in the immutable ledger."""
+    reason: str = Field(..., min_length=1, max_length=255, description="Audit reason for the transaction reversal")
+
+
+class TransactionCorrectionRequest(BaseModel):
+    """Request payload for correcting an immutable transaction."""
+    new_amount_paise: int = Field(..., strict=True, gt=0, description="Corrected amount in integer paise")
+    reason: str = Field(..., min_length=1, max_length=255, description="Audit reason for the correction")
+

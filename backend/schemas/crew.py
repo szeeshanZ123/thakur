@@ -83,3 +83,14 @@ class CrewLedgerEntry(BaseModel):
     finalized_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CrewBalanceResponse(BaseModel):
+    """Running cumulative payout balance in integer paise for a crew member."""
+    crew_member_id: int
+    crew_member_name: str
+    rank_name: Optional[str] = None
+    running_balance_paise: int = Field(..., description="Cumulative dividend earnings from finalized payouts in integer paise")
+
+    model_config = ConfigDict(from_attributes=True)
+
