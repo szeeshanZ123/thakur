@@ -36,3 +36,5 @@ class Voyage(Base):
 
     def __repr__(self) -> str:
         return f"<Voyage(id={self.id}, name='{self.name}', revenue_paise={self.revenue_paise}, status='{self.status}')>"
+
+
