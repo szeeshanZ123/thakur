@@ -32,18 +32,23 @@ async function loadAnalytics() {
     ]);
 
     renderAnalyticsKPIs(dashboardData, profitData);
+    const expCategories = expenseCatData?.items || (Array.isArray(expenseCatData) ? expenseCatData : []);
+    const voyProfitability = voyagesProfData?.items || voyagesProfData?.voyages || (Array.isArray(voyagesProfData) ? voyagesProfData : []);
+    const crewEarnings = crewEarnData?.items || crewEarnData?.crew || (Array.isArray(crewEarnData) ? crewEarnData : []);
+    const rankPayouts = rankPayoutsData?.ranks || (Array.isArray(rankPayoutsData) ? rankPayoutsData : []);
+
     renderAnalyticsCharts({
       dashboard: dashboardData,
       profit: profitData,
-      expenseCategories: expenseCatData?.items || expenseCatData || [],
-      voyagesProfitability: voyagesProfData?.voyages || voyagesProfData || [],
-      crewEarnings: crewEarnData?.crew || crewEarnData || [],
-      rankPayouts: rankPayoutsData?.ranks || rankPayoutsData || []
+      expenseCategories: expCategories,
+      voyagesProfitability: voyProfitability,
+      crewEarnings: crewEarnings,
+      rankPayouts: rankPayouts
     });
 
     renderRankedTables({
-      voyages: voyagesProfData?.voyages || voyagesProfData || [],
-      crew: crewEarnData?.crew || crewEarnData || []
+      voyages: voyProfitability,
+      crew: crewEarnings
     });
   } catch (err) {
     console.error("Failed to load analytics:", err);

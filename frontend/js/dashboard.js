@@ -16,13 +16,17 @@ async function loadDashboardData() {
 
     // 2. Fetch Category Breakdown & Voyage Profitability for Charts
     const [catBreakdown, profitabilityRes, recentVoyages] = await Promise.all([
-      API.getExpenseCategories().catch(() => []),
-      API.getVoyagesProfitability({ page_size: 8 }).catch(() => ({ voyages: [] })),
+      API.getExpenseCategories().catch(() => ({ items: [] })),
+      API.getVoyagesProfitability({ page_size: 8 }).catch(() => ({ items: [] })),
       API.getVoyages({ page_size: 5 }).catch(() => [])
     ]);
 
-    renderDashboardCharts(profitabilityRes.voyages || [], catBreakdown || []);
-    renderRecentVoyages(recentVoyages || []);
+    const voyList = Array.isArray(profitabilityRes) ? profitabilityRes : (profitabilityRes?.items || profitabilityRes?.voyages || []);
+    const catList = Array.isArray(catBreakdown) ? catBreakdown : (catBreakdown?.items || []);
+    const recentList = Array.isArray(recentVoyages) ? recentVoyages : (recentVoyages?.items || recentVoyages?.voyages || []);
+
+    renderDashboardCharts(voyList, catList);
+    renderRecentVoyages(recentList);
   } catch (err) {
     console.error("Failed to load dashboard data:", err);
     showError(kpiContainer, "Could not load treasury summary from backend. Please verify FastAPI is running at http://127.0.0.1:8000.", loadDashboardData);

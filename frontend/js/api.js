@@ -260,6 +260,14 @@ class ApiClient {
     return this.request(`/api/analytics/dashboard${query ? '?' + query : ''}`);
   }
 
+  async getAnalyticsDashboard(params = {}) {
+    return this.getDashboardSummary(params);
+  }
+
+  async getAnalytics(params = {}) {
+    return this.getDashboardSummary(params);
+  }
+
   async getRevenueAnalytics(params = {}) {
     const query = new URLSearchParams(params).toString();
     return this.request(`/api/analytics/revenue${query ? '?' + query : ''}`);
