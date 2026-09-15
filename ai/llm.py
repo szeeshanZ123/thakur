@@ -1,18 +1,4 @@
-"""
-Modular LLM Client wrapper for Hackathons.
-Supports external APIs (OpenAI, Gemini, custom endpoints) with instant fallback/mock mode.
-"""
 
-import os
-import requests
-from typing import Optional, Dict, Any
-from dotenv import load_dotenv
-from ai.prompts import DEFAULT_SYSTEM_PROMPT
-
-load_dotenv()
-
-
-class LLMClient:
     def __init__(
         self,
         provider: str = "auto",
