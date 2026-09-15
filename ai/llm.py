@@ -90,65 +90,7 @@ class LLMClient:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": temperature,
-                "max_tokens": max_tokens
-            }
-            resp = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                content = data["choices"][0]["message"]["content"]
-                return {
-                    "success": True,
-                    "content": content,
-                    "provider": "openai",
-                    "model": payload["model"],
-                    "error": None
-                }
-            else:
-                return {
-                    "success": False,
-                    "content": "",
-                    "provider": "openai",
-                    "model": payload["model"],
-                    "error": f"OpenAI API Error {resp.status_code}: {resp.text}"
-                }
-        except Exception as e:
-            return {
-                "success": False,
-                "content": "",
-                "provider": "openai",
-                "model": self.model,
-                "error": str(e)
-            }
-
-    def _gemini_generate(
-        self,
-        prompt: str,
-        system_prompt: str,
-        temperature: float,
-        max_tokens: int
-    ) -> Dict[str, Any]:
-        if not self.gemini_key:
-            return self._mock_generate(prompt)
-
-        try:
-            model_name = self.model if self.model != "mock-model" else "gemini-1.5-flash"
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_key}"
-            headers = {"Content-Type": "application/json"}
-            payload = {
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": f"System Instructions: {system_prompt}\n\nUser Request: {prompt}"}
-                        ]
-                    }
-                ],
-                "generationConfig": {
+      
                     "temperature": temperature,
                     "maxOutputTokens": max_tokens
                 }
